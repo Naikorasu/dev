@@ -1,0 +1,3132 @@
+#! /usr/bin/perl
+
+use POSIX;
+
+if ($ARGV[0] eq "")
+{
+  $errmsg = "Invalid Syntax";
+  &GAGAL;
+}
+
+$cekfilepasw = "c:/xampp/cgi-bin/snm/tHeInterPasw.psw";
+if (!open(INFO,$cekfilepasw))
+{
+	close(INFO);
+	$msg = "Error Connection";
+	&GAGAL;
+}
+else
+{
+	@lines = <INFO>;
+	close(INFO);
+	@datalines = split(/,/,$lines[0]);
+	$namadb = $datalines[0];
+	$userdb = $datalines[1];
+	$passdb = $datalines[2];
+	$lokasidb = $datalines[3];
+}
+
+  use DBI;
+  @db_param = ('mysql',$lokasidb,$namadb,$userdb,$passdb);
+  my $dsn = "DBI:$db_param[0]:database=$db_param[2];host=$db_param[1]";
+  $db = DBI->connect($dsn, $db_param[3], $db_param[4], {RaiseError => 0});
+
+$cfgbpid = "";
+$thetype = "convert";
+$filecfg = $ARGV[0];
+
+   $value = "";
+   foreach $var (sort(keys(%ENV))) {
+    $val = $ENV{$var};
+    $val =~ s|\n|\\n|g;
+    $val =~ s|"|\\"|g;
+    if ($var eq "TEMP")
+    {
+	$value = $val;
+	$returnvalue = 1;
+    }
+   }
+   if ($returnvalue <= 0)
+   {
+      foreach $var (sort(keys(%ENV))) {
+       $val = $ENV{$var};
+       $val =~ s|\n|\\n|g;
+       $val =~ s|"|\\"|g;
+       if ($var eq "TMP")
+       {
+	$value = $val;
+	$returnvalue = 1;
+       }
+      }
+   }
+   $value =~ tr/\\/\//;
+   $tempdir = $value;
+
+   print "Prepare...\n";
+     if ($cfgbpid ne "")
+     {
+       open(LOGBPID,">>$logbpid");
+       print LOGBPID "Prepare....\n";
+       close(LOGBPID);
+     }
+
+   my $querytemp = "SELECT NOW()";
+   my $sth = $db->prepare($querytemp);
+   $sth->execute();
+   my @rowtemp = $sth->fetchrow_array;
+   $sth->finish; 
+   $varnow = $rowtemp[0];
+
+  $thestart = $varnow;
+
+  open(FILE,$filecfg);
+  while (<FILE>)
+  {
+      @datalines = split(/\t/,$_);
+      if ($datalines[0] eq "srcformat")
+      {
+         $cfgsrcformat = $datalines[1];
+      }
+      if ($datalines[0] eq "outdir")
+      {
+         $cfgoutdir = $datalines[1];
+         $tempoutdir = $datalines[1] . "/listdir.txt";
+         $buatdir = $cfgoutdir . "/output";
+         mkdir ($buatdir, 777);
+         chmod (0777, $buatdir);
+         $buatdir = $cfgoutdir . "/output/vendor";
+         mkdir ($buatdir, 777);
+         chmod (0777, $buatdir);
+         $buatdir = $cfgoutdir . "/output/e-billing";
+         mkdir ($buatdir, 777);
+         chmod (0777, $buatdir);
+         $buatdir = $cfgoutdir . "/output/tmp";
+         mkdir ($buatdir, 777);
+         chmod (0777, $buatdir);
+         $buatdir = $cfgoutdir . "/output/log";
+         mkdir ($buatdir, 777);
+         chmod (0777, $buatdir);
+         $buatdir = $cfgoutdir . "/output/rar";
+         mkdir ($buatdir, 777);
+         chmod (0777, $buatdir);
+      }
+      if ($datalines[0] eq "srcdir")
+      {
+         $cfgsrcdir = $datalines[1];
+         $tempsrcdir = $datalines[1];
+      }
+      if ($datalines[0] eq "masterticket")
+      {
+         $cfgmasterticket = $datalines[1];
+      }
+      if ($datalines[0] eq "marketing")
+      {
+         $cfgmarketing = $datalines[1];
+      }
+      if ($datalines[0] eq "masterpntrwd")
+      {
+         $cfgpntrwd = $datalines[1];
+      }
+      if ($datalines[0] eq "masterhold")
+      {
+         $cfghold = $datalines[1];
+      }
+      if ($datalines[0] eq "listebs")
+      {
+         $cfglistebs = $datalines[1];
+      }
+      if ($datalines[0] eq "listkunciankurir")
+      {
+         $cfglistkunciankurir = $datalines[1];
+      }
+      if ($datalines[0] eq "listpindahkurir")
+      {
+         $cfglistpindahkurir = $datalines[1];
+      }
+      if ($datalines[0] eq "listlempar")
+      {
+         $cfglistlempar = $datalines[1];
+      }
+      if ($datalines[0] eq "listkurvskota")
+      {
+         $cfglistkurvskota = $datalines[1];
+      }
+      if ($datalines[0] eq "defaultcou")
+      {
+         $cfgdefaultcou = $datalines[1];
+      }
+      if ($datalines[0] eq "defaultprn")
+      {
+         $cfgdefaultprn = $datalines[1];
+      }
+      if ($datalines[0] eq "region")
+      {
+         $cfgregion = $datalines[1];
+         $fileregionid = $datalines[1];
+      }
+      if ($datalines[0] eq "product")
+      {
+         $cfgproduct = $datalines[1];
+      }
+      if ($datalines[0] eq "userid")
+      {
+         $cfguserid = $datalines[1];
+      }
+      if ($datalines[0] eq "period")
+      {
+         $cfgperiod = $datalines[1];
+	 $databulan = $cfgperiod;
+      }
+      if ($datalines[0] eq "ctrldatadir")
+      {
+         $cfgdatadir = $datalines[1];
+         $cfgdatadir =~ tr/\//\\/;
+      }
+      if ($datalines[0] eq "ctrlwwwdir")
+      {
+         $cfgwwwdir = $datalines[1];
+      }
+      if ($datalines[0] eq "ctrlbpid")
+      {
+         $cfgbpid = $datalines[1];
+      }
+  }
+  close (FILECFG);
+
+  my $statement = "DELETE FROM CUST_MasterPrintClean
+                   WHERE cust_product_id='$cfgproduct'
+                   AND cust_region_id='$cfgregion'";
+  my $sth = $db->prepare($statement);
+  $sth->execute();
+  $sth->finish;
+
+  my $statement = "DELETE FROM TEMP_PointerClean
+                   WHERE cust_spinid like '%datark%'
+                   AND cust_regionid='$cfgregion'";
+  my $sth = $db->prepare($statement);
+  $sth->execute();
+  $sth->finish;
+
+  my $statement = "DELETE FROM SPLIT_FileException 
+                   WHERE split_product_id='$cfgproduct'
+                   AND split_region_id='$cfgregion'";
+  my $sth = $db->prepare($statement);
+  $sth->execute();
+  $sth->finish;
+
+  my $statement = "DELETE FROM SPLIT_NorekException 
+                   WHERE split_product_id='$cfgproduct'
+                   AND split_region_id='$cfgregion'";
+  my $sth = $db->prepare($statement);
+  $sth->execute();
+  $sth->finish;
+
+   my $querytemp = "SELECT control_htdocs_dir FROM TblControl";
+   my $sth = $db->prepare($querytemp);
+   $sth->execute();
+   my @rowtemp = $sth->fetchrow_array;
+   $sth->finish; 
+   $fixhtdir = $rowtemp[0];
+
+   my $querytemp = "SELECT system_value FROM TblSystem
+   			WHERE system_product_id='$cfgproduct'
+   			AND system_id='varsharedir'";
+   my $sth = $db->prepare($querytemp);
+   $sth->execute();
+   my @rowtemp = $sth->fetchrow_array;
+   $sth->finish; 
+   @datatemp = split(/\;/,$rowtemp[0]);
+   $cfgsharedir = $datatemp[0];
+   $cfgmapdir = $datatemp[1];
+
+   my $querytemp = "SELECT system_value FROM TblSystem
+   			WHERE system_product_id='$cfgproduct'
+   			AND system_id='varposfile'";
+   my $sth = $db->prepare($querytemp);
+   $sth->execute();
+   my @rowtemp = $sth->fetchrow_array;
+   $sth->finish; 
+   $cfgposfile = $rowtemp[0];
+   
+   @datatemp = split(/\//,$cfgposfile);
+   $cfgdbspin = "";
+   for ($ki=0;$ki<@datatemp-2;$ki++)
+   {
+      $cfgdbspin .= $datatemp[$ki] . "/";
+   }
+   $cfgdbspin .= "data" . "/" . substr($datatemp[@datatemp-1],0,length($datatemp[@datatemp-1])-4) . ".db";
+
+   my $querytemp = "SELECT system_value FROM TblSystem
+   			WHERE system_product_id='$cfgproduct'
+   			AND system_id='varspindir'";
+   my $sth = $db->prepare($querytemp);
+   $sth->execute();
+   my @rowtemp = $sth->fetchrow_array;
+   $sth->finish; 
+   $cfgunixdir = $rowtemp[0];
+   $cfgdosdir = $rowtemp[0];
+   $cfgdosdir =~ tr/\//\\\\/;
+
+  if ($cfgbpid ne "")
+  {
+    $logbpid = $fixhtdir . "/temp/ticket/" . $cfgbpid . ".txt.log";
+    open(LOGBPID,">$logbpid");
+    close(LOGBPID);
+  }
+
+  unlink $tempoutdir;
+#  $tempsrcdir .= "/" . $cfgsrcformat . "*";
+  $tempsrcdir .= "/" . $cfgsrcformat;
+  $tempsrcdir =~ tr/\//\\/;
+  $tempoutdir =~ tr/\//\\/;
+  $varsystem = $tempdir . "/" . $cfgproduct . $cfgregion . "run.bat";
+  open(FILEOUT,">$varsystem");
+  print FILEOUT "\@echo off\n";
+  print FILEOUT "dir $tempsrcdir /b > $tempoutdir";
+  close(FILEOUT);
+  system("$varsystem");
+
+  $tempoutdir =~ tr/\\/\//;
+  open(FILE,$tempoutdir);
+  @datafile = ();
+  while (<FILE>)
+  {
+      $vartemp = $_;
+      $vartemp =~ tr/\r/ /;
+      $vartemp =~ tr/\n/ /;
+      $vartemp =~ tr/\r\n/ /;
+      if (length($vartemp) > 2)
+      {
+         $vartemp = $cfgsrcdir . "/" . $vartemp;
+         push(@datafile,$vartemp);
+      }
+  }
+  close(FILE);
+
+  if (@datafile <= 0)
+  {
+     print "No Files...";
+     if ($cfgbpid ne "")
+     {
+       open(LOGBPID,">>$logbpid");
+       print LOGBPID "No Files....\n";
+       close(LOGBPID);
+     }
+     exit 88;
+  }
+
+  $buatdir = $cfgdatadir;
+  mkdir ($buatdir, 777);
+  chmod (0777, $buatdir);
+  $buatdir = $cfgdatadir . "/$cfgproduct";
+  mkdir ($buatdir, 777);
+  chmod (0777, $buatdir);
+  $buatdir = $cfgdatadir . "/$cfgproduct/$cfgperiod";
+  mkdir ($buatdir, 777);
+  chmod (0777, $buatdir);
+  $buatdir = $cfgdatadir . "/$cfgproduct/$cfgperiod/$cfgregion";
+  mkdir ($buatdir, 777);
+  chmod (0777, $buatdir);
+  $varsystem = $tempdir . "/" . $cfgproduct . $cfgregion . "run.bat";
+  open(FILEOUT,">$varsystem");
+  print FILEOUT "\@echo off\n";
+  print FILEOUT "copy \"$cfgdosdir\\data\\src\\SPIN*\" \"$cfgdatadir\\$cfgproduct\\$cfgperiod\\$cfgregion\" /Y" . "\n";
+
+  foreach(@datafile)
+  {
+     $filein = $_;
+     $filein =~ tr/\//\\/;
+     $filein =~ s/^\s+|\s+$//gm;
+     @datatemp = split(/\//,$_);
+     print FILEOUT "del \"$filein\" /Q" . "\n";
+     $fileout = "finish" . $datatemp[@datatemp-1];
+     $fileout =~ s/^\s+|\s+$//gm;
+     print FILEOUT "ren \"$filein\" \"$fileout\"" . "\n";
+  }
+  if ($cfgmasterticket ne "")
+  {
+     $filein = $cfgmasterticket;
+     $filein =~ tr/\//\\/;
+     print FILEOUT "del $filein /Q" . "\n";
+
+     $filein = $cfgmasterticket . ".new";
+     $filein =~ tr/\//\\/;
+     print FILEOUT "del $filein /Q" . "\n";
+  }
+  if ($cfgmarketing ne "")
+  {
+     $filein = $cfgmarketing;
+     $filein =~ tr/\//\\/;
+     print FILEOUT "del $filein /Q" . "\n";
+  }
+  if ($cfgpntrwd ne "")
+  {
+     $filein = $cfgpntrwd;
+     $filein =~ tr/\//\\/;
+     print FILEOUT "del $filein /Q" . "\n";
+  }
+  if ($cfghold ne "")
+  {
+     $filein = $cfghold;
+     $filein =~ tr/\//\\/;
+     print FILEOUT "del $filein /Q" . "\n";
+  }
+  if ($cfglistebs ne "")
+  {
+     $filein = $cfglistebs;
+     $filein =~ tr/\//\\/;
+     print FILEOUT "del $filein /Q" . "\n";
+  }
+  if ($cfglistkunciankurir ne "")
+  {
+     $filein = $cfglistkunciankurir;
+     $filein =~ tr/\//\\/;
+     print FILEOUT "del $filein /Q" . "\n";
+  }
+  if ($cfglistpindahkurir ne "")
+  {
+     $filein = $cfglistpindahkurir;
+     $filein =~ tr/\//\\/;
+     print FILEOUT "del $filein /Q" . "\n";
+  }
+  if ($cfglistlempar ne "")
+  {
+     $filein = $cfglistlempar;
+     $filein =~ tr/\//\\/;
+     print FILEOUT "del $filein /Q" . "\n";
+  }
+  if ($cfglistkurvskota ne "")
+  {
+     $filein = $cfglistkurvskota;
+     $filein =~ tr/\//\\/;
+     print FILEOUT "del $filein /Q" . "\n";
+  }
+  close(FILEOUT);
+
+  @promoid = ();
+  @promoname = ();
+  $vartemp = substr($cfgperiod,1-1,4) . "-" . substr($cfgperiod,5-1,2) . "-" . $cfgregion;
+  my $querytemp = "SELECT promo_id,promo_tray_name FROM PROMO_BrochureHead
+  		   WHERE promo_product_id='$cfgproduct'
+  		   AND TO_DAYS('$vartemp')>=TO_DAYS(promo_date_start)
+  		   AND TO_DAYS('$vartemp')<=TO_DAYS(promo_date_end)";
+  my $sth = $db->prepare($querytemp);
+  $sth->execute();
+  my @rowtemp;
+  while ($rowtemp = $sth->fetchrow_arrayref)
+  {
+     push(@promoid,$rowtemp->[0]);
+     push(@promoname,$rowtemp->[1]);
+  }
+  $sth->finish;
+
+   my $querytemp = "SHOW TABLES LIKE 'TEMP_Pointer$databulan'";
+   my $sth = $db->prepare($querytemp);
+   $sth->execute();
+   my @rowtemp = $sth->fetchrow_array;
+   $sth->finish; 
+   if ($rowtemp[0] eq "")
+   {
+   	   my $statement = "CREATE TABLE TEMP_Pointer$databulan(cust_product_number char(30) not null,
+		cust_spinid char(50) not null, cust_spincnt int(7) not null,
+		cust_spinsrc char(30) not null, cust_spintxn int(5) not null,
+		cust_spinpage int(3) not null, cust_pointer decimal(15,0) not null, 
+		cust_spinrec int(4) not null,cust_regionid char(10) not null,
+		primary key(cust_product_number),
+		index(cust_product_number))
+		ENGINE=MYISAM";
+   	   my $sth = $db->prepare($statement);
+   	   $sth->execute();
+   	   $sth->finish;
+   }
+
+   my $querytemp = "SHOW TABLES LIKE 'CUST_EBS$databulan'";
+   my $sth = $db->prepare($querytemp);
+   $sth->execute();
+   my @rowtemp = $sth->fetchrow_array;
+   $sth->finish; 
+   if ($rowtemp[0] eq "")
+   {
+   	   my $statement = "CREATE TABLE CUST_EBS$databulan (cust_prod_master char(30) not null,
+	  		cust_prod_no char(30) not null, cust_timestamp datetime not null,
+	  		cust_region_id char(3) not null, cust_product_id char(3) not null, 
+	  		cust_email char(100), cust_status char(1), cust_errcode char(10),
+	  		cust_user char(100),
+	  		PRIMARY KEY(cust_prod_master,cust_prod_no,cust_timestamp), index(cust_prod_no))
+	  		ENGINE=MYISAM";
+   	   my $sth = $db->prepare($statement);
+   	   $sth->execute();
+   	   $sth->finish;
+   }
+
+   my $querytemp = "SHOW TABLES LIKE 'CUST_MasterPrint$databulan'";
+   my $sth = $db->prepare($querytemp);
+   $sth->execute();
+   my @rowtemp = $sth->fetchrow_array;
+   $sth->finish; 
+   if ($rowtemp[0] eq "")
+   {
+   	   my $statement = "CREATE TABLE CUST_MasterPrint$databulan (cust_dok_id char(20) not null,
+		  cust_product_id char(5) not null, cust_region_id char(5) not null,
+		  cust_prod_no char(30) not null, cust_nama char(60) not null,
+		  cust_alamat char(200) not null, cust_kelurahan char(30) not null,
+		  cust_city char(30) not null, cust_zipcode char(10) not null,
+		  cust_id char(15) not null, cust_segmen char(10) not null,
+		  cust_total_bill decimal(15,2) not null, cust_sheet int(4) not null,
+		  cust_sequence char(40), cust_currency_id char(10),
+		  cust_vendor char(40), cust_courier char(40), 
+		  cust_branch_id char(10), cust_region char(10),
+		  cust_timestamp datetime not null, cust_flag char(5),
+		  cust_prod_master char(30) not null, cust_prod_no_real char(30),
+		  PRIMARY KEY(cust_product_id,cust_prod_no),
+	  	  index(cust_prod_no))
+	  	  ENGINE=MYISAM";
+   	   my $sth = $db->prepare($statement);
+   	   $sth->execute();
+   	   $sth->finish;
+   }
+
+     my $statement = "DROP TABLE SPLIT_MasterPage$cfgproduct";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+     my $statement = "CREATE TABLE SPLIT_MasterPage$cfgproduct(prod_no char(30) not null, 
+   		prod_page decimal(5,0) not null,
+	  	PRIMARY KEY(prod_no), index(prod_no))
+	  	ENGINE=MYISAM";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+     my $statement = "DROP TABLE SPLIT_MasterPoint$cfgproduct";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+     my $statement = "CREATE TABLE SPLIT_MasterPoint$cfgproduct(point_master char(30) not null, 
+   		point_number char(30) not null, point_expired char(10) not null,
+   		point_total decimal(14,0) not null, point_redeemed decimal(14,0) not null,
+   		point_balance decimal(14,0) not null,
+	  	PRIMARY KEY(point_master,point_number), index(point_number))
+	  	ENGINE=MYISAM";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+     my $statement = "DROP TABLE SPLIT_MasterTicket$cfgproduct";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+     my $statement = "CREATE TABLE SPLIT_MasterTicket$cfgproduct(product_master char(30) not null, 
+   		product_number char(30) not null, product_flags char(15) not null,
+   		product_id char(3) not null, product_region char(3) not null,
+   		product_vendor char(6), product_segment char(10),
+   		product_courier char(6), cust_data_one char(50),
+   		cust_data_two text, cust_data_three char(50),
+   		cust_pri_code char(20), cust_pri_region char(30),
+   		cust_pri_propinsi char(30), cust_pri_kota char(30),
+   		cust_pri_branch char(40),
+   		cust_sex char(20), cust_name char(100), cust_subproduct char(50),   		
+	  	PRIMARY KEY(product_master,product_number), index(product_number))
+	  	ENGINE=MYISAM";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+     my $statement = "DROP TABLE SPLIT_MarketingTicket$cfgproduct";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+     my $statement = "CREATE TABLE SPLIT_MarketingTicket$cfgproduct(product_field char(20) not null, 
+   		product_number char(30) not null, product_flags char(20) not null,
+   		product_id char(200),
+	  	PRIMARY KEY(product_number), index(product_number))
+	  	ENGINE=MYISAM";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+     my $statement = "DROP TABLE SPLIT_VendorSort$cfgproduct";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+     my $statement = "CREATE TABLE SPLIT_VendorSort$cfgproduct(document_id char(20) not null, 
+   		product_segment char(10) not null, 
+   		product_number char(30) not null, cust_name char(40) not null,
+   		cust_comp char(40), cust_addr1 char(40),
+   		cust_addr2 char(40), cust_addr3 char(40), 
+   		cust_addr4 char(40), cust_addr5 char(40), 
+   		cust_telp_r char(40), cust_seqnumber char(20), 
+   		cust_nokartu char(50), cust_city char(30), 
+   		cust_zipcode char(5), cust_nfile char(30), cust_wil char(50),
+   		cust_status char(20), cust_barcode char(40), 
+   		cust_request char(20), cust_cstaff char(10),
+   		cust_ckurir char(20), 
+   		cust_ckode char(30), cust_cregion char(30),
+   		cust_cpropinsi char(30), cust_ckota char(30),
+   		cust_cbranch char(40), cust_flag char(50),
+	  	PRIMARY KEY(product_number), index(product_number))
+	  	ENGINE=MYISAM";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+     my $statement = "DROP TABLE SPLIT_SPINDB$cfgproduct";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+     my $statement = "CREATE TABLE SPLIT_SPINDB$cfgproduct(thecounter int(6) not null, 
+   		thefilename char(20) not null, thesequence char(1),
+   		thecourier char(1),theprior char(1),
+   		theflagbrosur char(1), thefilesource char(20), 
+   		thetxn int(4), thecount int(4), 
+   		thepointer decimal(15,0), thecardnumber char(30) not null, 
+   		thenotused char(1),
+	  	PRIMARY KEY(thecardnumber), INDEX(thecardnumber))
+	  	ENGINE=MYISAM";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+      if ($cfghold ne "")
+      {
+          my $statement = "DROP TABLE SPLIT_MasterHOLD$cfgproduct";
+          my $sth = $db->prepare($statement);
+          $sth->execute();
+          $sth->finish;
+
+          my $statement = "CREATE TABLE SPLIT_MasterHOLD$cfgproduct(product_number char(30) not null,
+	  	                      PRIMARY KEY(product_number), index(product_number))
+	  	                      ENGINE=MYISAM";
+          my $sth = $db->prepare($statement);
+          $sth->execute();
+          $sth->finish;
+          
+#          my $statement = "LOAD DATA INFILE '$cfghold' REPLACE INTO TABLE SPLIT_MasterHOLD$cfgproduct";
+#          my $sth = $db->prepare($statement);
+#          $sth->execute();
+#          $sth->finish;
+
+           $dumpretval = funcDUMP("$cfghold","SPLIT_MasterHOLD$cfgproduct");
+
+          my $statement = "UPDATE SPLIT_MasterHOLD$cfgproduct
+                           SET product_number=REPLACE(product_number,'\r','')";
+          my $sth = $db->prepare($statement);
+          $sth->execute();
+          $sth->finish;
+
+          my $statement = "UPDATE SPLIT_MasterHOLD$cfgproduct
+                           SET product_number=REPLACE(product_number,'\n','')";
+          my $sth = $db->prepare($statement);
+          $sth->execute();
+          $sth->finish;
+
+          my $statement = "UPDATE SPLIT_MasterHOLD$cfgproduct
+                           SET product_number=REPLACE(product_number,'\r\n','')";
+          my $sth = $db->prepare($statement);
+          $sth->execute();
+          $sth->finish;
+
+          my $statement = "UPDATE SPLIT_MasterHOLD$cfgproduct
+                           SET product_number=REPLACE(product_number,'\n\r','')";
+          my $sth = $db->prepare($statement);
+          $sth->execute();
+          $sth->finish;
+      }
+
+     if ($cfglistkurvskota ne "")
+     {
+     	my $statement = "DROP TABLE TblKurirVSKota";
+     	my $sth = $db->prepare($statement);
+     	$sth->execute();
+     	$sth->finish;
+
+     	my $statement = "CREATE TABLE TblKurirVSKota(nid int(4) not null, 
+   		nkota char(50) not null, nfile char(50),
+   		nkurir char(50))
+   		ENGINE=MYISAM";
+     	my $sth = $db->prepare($statement);
+     	$sth->execute();
+     	$sth->finish;
+     }
+
+     if ($cfglistkurvskota ne "")
+     {
+        open(FILEDAT,$cfglistkurvskota) || close(FILEDAT);
+        $hiturut = 0;
+        while (<FILEDAT>)
+        {
+           $hiturut++;
+           @datacflag = split(/,/,$_);
+           $datacflag[3] =~ tr/\r/ /;
+           $datacflag[3] =~ tr/\n/ /;
+           $datacflag[3] =~ tr/\r\n/ /;
+           if (uc($datacflag[0]) ne "NO")
+           {
+              my $statement = "INSERT INTO TblKurirVSKota VALUES('$hiturut','$datacflag[1]',
+         			'$datacflag[2]','$datacflag[3]')";
+              my $sth = $db->prepare($statement);
+              $sth->execute();
+              $sth->finish;
+           }
+        }
+        close (FILEDAT);
+     }
+
+    my $statement = "DROP TABLE TEMP_TblKurirVSKota";
+    my $sth = $db->prepare($statement);
+    $sth->execute();
+    $sth->finish;
+
+    my $statement = "CREATE TABLE TEMP_TblKurirVSKota(nid int(4) not null, 
+   		nkota char(50) not null, nfile char(50),
+   		nkurir char(50))
+   		ENGINE=MYISAM";
+    my $sth = $db->prepare($statement);
+    $sth->execute();
+    $sth->finish;
+
+    if ($cfgpresetkurir ne "")
+    {
+    	my $querytemp = "SELECT nid, nkota, nfile, nkurir
+	        	FROM TblPresetKurirVSKota
+	        	WHERE preset_id='$cfgpresetkurir'";
+    	my $sth = $db->prepare($querytemp);
+    	$sth->execute();
+    	my @rowtemp;
+    	while ($rowtemp = $sth->fetchrow_arrayref)
+    	{
+              my $statement = "INSERT INTO TEMP_TblKurirVSKota VALUES('$rowtemp->[0]',
+              			'$rowtemp->[1]','$rowtemp->[2]','$rowtemp->[3]')";
+              my $sth = $db->prepare($statement);
+              $sth->execute();
+              $sth->finish;
+    	}
+    	$sth->finish;
+    }
+
+    if ($cfgmasterticket ne "")
+    {
+        $fileout = $tempdir . "/" . $cfgproduct . $cfgregion . "tck.txt";
+        open(FILEOUT,">$fileout");
+        open(FILEDAT,$cfgmasterticket) || close(FILEDAT);
+        $hiturut = 0;
+        while (<FILEDAT>)
+        {
+          $bisalanjut = 0;
+          $vartemp = "";
+          for ($zz=0;$zz<length($_);$zz++)
+          {
+      	    if (substr($_,$zz,1) ne "\"" and substr($_,$zz,1) ne "'")
+      	    {
+      		    $vartemp .= substr($_,$zz,1);
+      	    }      	
+          }
+          $vartemp =~ tr/\r/ /;
+          $vartemp =~ tr/\n/ /;
+          $vartemp =~ tr/\r\n/ /;
+          
+
+          @datalines = split(/,/,$vartemp);
+           if ($cfgproduct eq "BRK" or $cfgproduct eq "BSY")
+          {
+             $realnorek = "";
+             for ($zz=0;$zz<length($datalines[2]);$zz++)
+             {
+                if (substr($datalines[2],$zz,1) ne "-")
+                {
+                   $realnorek .= substr($datalines[2],$zz,1);
+                }
+             }
+             $datalines[2] = $realnorek;
+             $realnorek = substr($datalines[2],1-1,1) . "-" . substr($datalines[2],2-1,3) . "-" . substr($datalines[2],5-1);
+             $datalines[2] = $realnorek;
+          }
+
+          $tempgcif = $datalines[0];
+          $tempprodno = $datalines[2];
+          if ($datalines[1] eq "")
+          {
+             $tempprodmaster = $tempprodno;
+          }
+          else
+          {
+             $tempprodmaster = $datalines[1];
+          }
+          $tempemail = $datalines[3];
+          $tempdob = $datalines[4];
+          $tempdob =~ s/^\s+|\s+$//gm;
+          $tempflagreg = $datalines[5];
+          $tempflagpromo = $datalines[6];
+          $temptelpno = $datalines[7];
+          $tempencprodno = funcEnc($tempprodno);
+          $tempsex = $datalines[9];
+          $tempnama = $datalines[10];
+          $tempsubproduct = $datalines[12];
+
+    	    my $querytemp = "SELECT cust_email
+	        	               FROM CUST_SecondEmail
+	        	               WHERE cust_prod_no='$tempencprodno'
+	        	               ORDER BY cust_urut";
+    	    my $sth = $db->prepare($querytemp);
+    	    $sth->execute();
+    	    my @rowtemp;
+    	    while ($rowtemp = $sth->fetchrow_arrayref)
+    	    {
+    	       $tempemail .= "|" . $rowtemp->[0];
+    	    }
+    	    $sth->finish;
+
+          if ($tempdob eq "")
+          {
+             $bisalanjut = 1;
+          }
+          
+          for ($datalines[5])
+          {
+	  	       if    (/1/)    {
+	  	                         $tempflagreg = "Ybbbbb" . "Y" . "b" . "bb";
+        		  	            }
+          	 elsif (/2/)    {
+	  	                         $tempflagreg = "Ybbbbb" . "Y" . "Y" . "bb";
+        		  	            }
+          	 elsif (/B/)    {
+	  	                         $tempflagreg = "bbbbbb" . "b" . "b" . "bb";
+        		  	            }
+          	 else  	        {
+	  	                         $tempflagreg = "Ybbbbb" . "b" . "Y" . "bb";
+        		  	            }
+          }
+
+          $tempvendor = "DMP";
+          if ($cfghold ne "")
+          {
+            if ($cfgproduct eq "BPR" or $cfgproduct eq "BSK")
+            {
+              $searchprodno = substr($tempprodno,1-1,10);
+            }
+            else
+            {
+              $searchprodno = $tempprodno;
+            }
+  	         my $querytempversion = "SELECT COUNT(*)
+  				                           FROM SPLIT_MasterHOLD$cfgproduct
+  				                           WHERE product_number like '$searchprodno%'";
+  	         my $sth = $db->prepare($querytempversion);
+  	         $sth->execute();
+  	         my @rowtempversion = $sth->fetchrow_array;
+  	         $sth->finish; 
+  	         if ($rowtempversion[0] > 0)
+  	         {
+  	            $tempvendor = "BLK3";
+  	         }
+          }
+
+#  	      my $querytempversion = "SELECT cust_flag
+#  				     FROM CUST_Detail
+#  				     WHERE cust_prod_no='$tempencprodno'";
+#  	      my $sth = $db->prepare($querytempversion);
+#  	      $sth->execute();
+#  	      my @rowtempversion = $sth->fetchrow_array;
+#  	      $sth->finish; 
+#          if ($rowtempversion[0] eq "")
+#          {
+#             $tempflag = "Ybbbbb" . "Y" . "Y" . "bb";
+#          }
+#          else
+#          {
+#             $tempflag = substr($rowtempversion[0],1-1,6) . $datalines[4] . $datalines[5] . "bb";
+#          }
+#   	      my $statement = "INSERT INTO SPLIT_MasterTicket$cfgproduct VALUES('$tempprodmaster','$tempprodno',
+#   	                       '$tempflagreg','$cfgproduct','$cfgregion','DMP','','','$tempgcif','$tempemail','$tempdob','$temptelpno','','','','')";
+#   	      my $sth = $db->prepare($statement);
+#   	      $sth->execute();
+#   	      $sth->finish;
+            if ($bisalanjut <= 0)
+            {
+               print FILEOUT $tempprodmaster . chr(9) . $tempprodno . chr(9) . $tempflagreg . chr(9) . $cfgproduct . chr(9) . $cfgregion . chr(9) . $tempvendor . chr(9) . ""  . chr(9) .  ""  . chr(9) . $tempgcif . chr(9) . $tempemail . chr(9) . $tempdob . chr(9) . $temptelpno . chr(9) . ""  . chr(9) . ""  . chr(9) . ""  . chr(9) . "" . chr(9) . $tempsex . chr(9) . $tempnama . chr(9) . $tempsubproduct  . chr(9) . "\n";
+            }
+        }
+        close (FILEDAT);
+        close(FILEOUT);
+
+#   	      my $statement = "LOAD DATA INFILE '$fileout' REPLACE INTO TABLE SPLIT_MasterTicket$cfgproduct";
+#   	      my $sth = $db->prepare($statement);
+#   	      $sth->execute();
+#   	      $sth->finish;
+
+           $dumpretval = funcDUMP("$fileout","SPLIT_MasterTicket$cfgproduct");
+   }
+
+    if ($cfgpntrwd ne "")
+    {
+        $fileout = $tempdir . "/" . $cfgproduct . $cfgregion . "pnt.txt";
+        open(FILEOUT,">$fileout");
+        open(FILEDAT,$cfgpntrwd) || close(FILEDAT);
+        $hiturut = 0;
+        while (<FILEDAT>)
+        {
+      	   $vartemp = $_;
+           $vartemp =~ tr/\r/ /;
+           $vartemp =~ tr/\n/ /;
+           $vartemp =~ tr/\r\n/ /;
+
+           $pointmaster = substr($_,2-1,19);
+           $pointmaster =~ s/^\s+|\s+$//gm;
+
+           $pointnumber = substr($_,21-1,19);
+           $pointnumber =~ s/^\s+|\s+$//gm;
+
+           $pointexpired = substr($_,40-1,6);
+           $pointexpired =~ s/^\s+|\s+$//gm;
+
+           $pointtotal = substr($_,46-1,14) * 1;
+
+           $pointredeem = substr($_,60-1,14) * 1;
+
+           $pointbalance = substr($_,74-1,14) * 1;
+
+#              my $statement = "INSERT INTO SPLIT_MasterPoint$cfgproduct VALUES('$pointmaster',
+#         			'$pointnumber','$pointexpired',
+#         			'$pointtotal','$pointredeem','$pointbalance')";
+#              my $sth = $db->prepare($statement);
+#              $sth->execute();
+#              $sth->finish;
+          print FILEOUT $pointmaster . chr(9) . $pointnumber . chr(9) . $pointexpired . chr(9) . $pointtotal . chr(9) . $pointredeem . chr(9) . $pointbalance . chr(9) . "" . "\n";
+
+        }
+        close (FILEDAT);
+        close(FILEOUT);
+
+#   	      my $statement = "LOAD DATA INFILE '$fileout' REPLACE INTO TABLE SPLIT_MasterPoint$cfgproduct";
+#   	      my $sth = $db->prepare($statement);
+#   	      $sth->execute();
+#   	      $sth->finish;
+
+           $dumpretval = funcDUMP("$fileout","SPLIT_MasterPoint$cfgproduct");
+    }
+
+    my $querytemp = "SELECT *
+	        	FROM TblKurirVSKota";
+    my $sth = $db->prepare($querytemp);
+    $sth->execute();
+    my @rowtemp;
+    while ($rowtemp = $sth->fetchrow_arrayref)
+    {
+  	my $querytempversion = "SELECT COUNT(*)
+  				FROM TEMP_TblKurirVSKota
+  				WHERE nid='$rowtemp->[0]'";
+  	my $sth = $db->prepare($querytempversion);
+  	$sth->execute();
+  	my @rowtempversion = $sth->fetchrow_array;
+  	$sth->finish; 
+  	if ($rowtempversion[0] <= 0)
+  	{
+              my $statement = "INSERT INTO TEMP_TblKurirVSKota VALUES('$rowtemp->[0]',
+              			'$rowtemp->[1]','$rowtemp->[2]','$rowtemp->[3]')";
+              my $sth = $db->prepare($statement);
+              $sth->execute();
+              $sth->finish;
+  	}
+    }
+    $sth->finish;
+
+
+if ($thetype eq "convert")
+{
+   print "Convert...\n";
+     if ($cfgbpid ne "")
+     {
+       open(LOGBPID,">>$logbpid");
+       print LOGBPID "Convert....\n";
+       close(LOGBPID);
+     }
+
+# KONVERSI DATA MULAI DARI SINI
+  if ($maxtxn eq "")
+  {
+     $maxtxn = 34;
+  }
+  if ($starttxn eq "")
+  {
+     $starttxn = 16;
+  }
+      $custtxnperpage = 60;
+   $statuspenggabungan = "";
+  $hitcust = 0;
+  $urut = 0;
+  $hiturut = 0;
+  $hitlembar = 0;
+  $hitfooter = 0;
+  $sudahbarcode = 0;
+  $hittxn = 0;
+  @datarec = ();
+  @data11 = ();
+  $filetemp = $cfgsrcdir . "/trim$cfgproduct.txt";
+  open(FILETEMP,">$filetemp");
+  foreach(@datafile)
+  {
+    $filein = $_;
+    open(FILE,$filein);
+    while (<FILE>)
+    {
+      $vartemp = $_;
+      $vartemp =~ tr/\|/ /;
+      $vartemp =~ tr//\n/;
+      if (substr($vartemp,89-1,14) eq "NOMOR REKENING" or substr($vartemp,89-1,14) eq "ACCOUNT NUMBER")
+      {
+         $hiturut = 5;
+         $hittxn = 1;
+         $varnorek = substr($vartemp,119-1);
+         $varnorek =~ tr/\r/ /;
+         $varnorek =~ tr/\n/ /;
+         $varnorek =~ tr/\r\n/ /;
+         $varnorek =~ s/^\s+|\s+$//gm;
+#         $varnorek = "";
+#         for ($zz=0;$zz<length($realnorek);$zz++)
+#         {
+#            if (substr($realnorek,$zz,1) ne "-")
+#            {
+#               $varnorek .= substr($realnorek,$zz,1);
+#            }
+#         }
+      }
+      $hiturut++;
+      if ($hiturut > 10 and $hiturut < 18 and $hittxn > 0)
+      {
+         $validtulisan = "N";
+         $cekmsg = substr($vartemp,2-1,40);
+         $cekmsg =~ s/^\s+|\s+$//gm;
+         $bacatulisan = $vartemp;
+         $bacatulisan =~ s/^\s+|\s+$//gm;         
+         if (substr($bacatulisan,1-1,9) eq "RINGKASAN")
+         {
+            $validtulisan = "Y";
+         }
+         else
+         {
+            $bacainggris = "";
+            for ($hiting=0;$hiting<length($bacatulisan);$hiting++)
+            {
+               if (substr($bacatulisan,$hiting,) eq "ACCOUNT SUMMARY")
+               {
+                  $validtulisan = "Y";
+               }
+            }
+         }
+         if ($validtulisan eq "Y" and $cekmsg eq "")
+         {
+#print substr($vartemp,53-1,1) . $cekmsg . " // " . $hiturut;exit;
+            for($zz=$hiturut;$hiturut<=16;$hiturut++)
+            {
+               $dot = " " x 150;
+               print FILETEMP $dot . "\n";
+            }
+         }
+      }
+      if (substr($vartemp,2-1,10) eq "KEPADA YTH" or substr($vartemp,2-1,10) eq "TO :      ")
+      {
+       $statuspenggabungan = "";
+     	 @datalines = split(/\//,$filein);
+     	 $vartemporari = substr($vartemp,15);
+         $vartemporari =~ s/^\s+|\s+$//gm;
+         $dot = " " x (114 - length($datalines[@datalines-1]) - length($vartemporari));
+         if (substr($vartemp,2-1,10) eq "KEPADA YTH")
+         {
+            print FILETEMP " KEPADA YTH : " . $datalines[@datalines-1] . $dot . $vartemporari . "\n";
+         }
+         else
+         {
+            print FILETEMP " TO :         " . $datalines[@datalines-1] . $dot . $vartemporari . "\n";
+         }         
+      }
+      else
+      {
+        if (substr($vartemp,89-1,9) eq "MATA UANG" or substr($vartemp,89-1,9) eq "CURRENCY ")
+        {
+  	      $varcurrency = substr($vartemp,119-1,3);
+          $varcurrency =~ tr/\r/ /;
+           $varcurrency =~ tr/\n/ /;
+           $varcurrency =~ tr/\r\n/ /;
+           $varcurrency =~ s/^\s+|\s+$//gm;
+           if ($statuspenggabungan eq "")
+           {
+              print FILETEMP substr($vartemp,0,length($vartemp)-3) . $varnorek . $varcurrency . "\n";
+           }
+           else
+           {
+              print FILETEMP substr($vartemp,0,length($vartemp)-3) . "                   " . "\n";
+           }
+        }
+        else
+        {
+           if (substr($vartemp,2-1,20) eq "*** PENGGABUNGAN ***")
+           {
+              $statuspenggabungan = "Y";
+           }
+      	   print FILETEMP $vartemp;
+        }
+      }
+    }
+    close (FILE);
+    print FILETEMP "\n CABANG :\n";
+  }
+  print FILETEMP "\n CABANG :\n";
+  close(FILETEMP);
+
+  $hiturut = 0;
+  $hittxn = 0;
+  $filetemp = $cfgoutdir . "/output/tmp" . "/temp.tmp";
+  open(FILETEMP,">$filetemp");
+  $fileomr = $cfgoutdir . "/output/e-billing/data.new";
+  open(FILEOMR,">$fileomr");
+  $logpage = $cfgoutdir . "/output/tmp/PAGE.txt";
+  open(LOGPAGE,">$logpage");
+  $logsc = $cfgoutdir . "/output/vendor/SCNasabah.txt";
+  open(LOGSC,">$logsc");
+  print LOGSC "seqno" . chr(9) . "segment" . chr(9) . "cc" . chr(9) . "nama" . chr(9). "company" . chr(9) . "alamat1" . chr(9) . "alamat2" . chr(9) . "alamat3" . chr(9) . "alamat4" . chr(9) . "alamat5" . chr(9) . "telr" . chr(9) . "telk" . chr(9) . "nokartu" . chr(9) . "kota" . chr(9) . "kodepos" . chr(9) . "nfile" . chr(9) . "wil" . chr(9) . "status" . chr(9) . "barcode" . chr(9) . "request" . chr(9) . "cstaff" . chr(9) . "ckurir" . chr(9) . "prikode" . chr(9) . "priregion" . chr(9) . "priprop" . chr(9) . "pricity" . chr(9) . "pribranch" . chr(9) . "totalpage" . chr(9) . "\n";
+  @datafile = ();
+  $vartemp = $cfgsrcdir . "/trim$cfgproduct.txt";
+  push(@datafile,$vartemp);
+ foreach(@datafile)
+ {
+   $filein = $_;
+   $oldnorek = "";
+   $statusdiambil = "";
+   $sedangadasampah = 0;
+   $sedangadatransaksi = 0;
+   $paksaprint = 0;
+   $statuspenggabungan = "";
+   $hitbarisgab = 0;
+   $hitbaristemp = 0;
+   $adanorek = "T";
+   $totalpage = 0;
+   $oriinfo1 = "";
+   $oriinfo2 = "";
+   $oriinfo3 = "";
+   $oriinfo4 = "";
+   $oriinfo5 = "";
+	 $info1 = "";
+	 $info2 = "";
+	 $info3 = "";
+	 $info4 = "";
+	 $info5 = "";
+   open(FILE,$filein);
+   while (<FILE>)
+   {
+      $vartemp = $_;
+      $vartemp =~ tr/\r/ /;
+      $vartemp =~ tr/\n/ /;
+      $vartemp =~ tr/\r\n/ /;
+      $adanpwp = "T";
+      $varid = substr($vartemp,2-1,6);
+      if (uc($varid) eq "CABANG" or uc($varid) eq "BRANCH")
+      {
+        if ($statuspenggabungan eq "F")
+        {
+           $statuspenggabungan = "";
+           $hitbarisgab = 0;
+        }
+        if ($statuspenggabungan ne "")
+        {
+#          $norek = $oldnorek;
+            $retval = funcGetGab();
+            if ($statuspenggabungan eq "E")
+            {
+#               $statuspenggabungan = "";
+#               $hitbarisgab = 0;
+               $norek = $oldnorek;
+            }
+            else
+            {
+               $norek .= $custcurrency;
+            }
+        }
+        else
+        {
+          if ($adanorek ne "T")
+          {
+            close (FILETEMP);
+            if ($statuspenggabungan ne "Y")
+            {
+               $norek .= $custcurrency;
+            }
+            $retval = funcParamSplitting($norek,"BLK");
+            $retval = funcParamSplitting($norek,"BLK2");
+
+            $retval = funcGetTemp();
+          }
+        }
+#if ($norek eq "2-052-116810IDR")
+#{
+#print "$norek - $oldnorek\n";
+#exit;
+#}
+          open(FILETEMP,">$filetemp");
+#          print FILETEMP $vartemp . "\n";
+  	      $hitfooter = 0;
+          $hitlembar = 0;
+          $hittxn = 0;
+          $adanorek = "T";
+          $statusdiambil = "";
+          $sedangadasampah = 0;
+          $sedangadatransaksi = 0;
+          $paksaprint = 0;
+#          $statuspenggabungan = "";
+#          $totalpage = 0;
+	        $info1 = "";
+	        $info2 = "";
+	        $info3  = "";
+	        $info4 = "";
+	        $info5 = "";
+         if ($norek ne $oldnorek or ($statuspenggabungan eq "Y" and $hitbarisgab < 11))
+         {
+               $oldnorek = $norek;
+               $sudahbarcode = 0;
+               $hitbaristemp = 0;
+#if ($statuspenggabungan eq "Y")
+#{
+#print "$norek - $oldnorek - $custname\n";
+#exit;
+#}
+          if ($sudahbarcode eq 0)
+          {
+             $sudahbarcode = 1;
+  	      my $querytempversion = "SELECT *
+  				              FROM SPLIT_MasterPoint$cfgproduct
+  				              WHERE point_number='$norek'";
+  	      my $sth = $db->prepare($querytempversion);
+  	      $sth->execute();
+  	      my @rowtempversion = $sth->fetchrow_array;
+  	      $sth->finish; 
+
+  	      if ($rowtempversion[3] eq "")
+  	      {
+  	        $pointtotal = 0;
+  	      }
+  	      else
+  	      {
+  	        $pointtotal = $rowtempversion[3];
+  	      }
+  	      if ($rowtempversion[4] eq "")
+  	      {
+  	        $pointredeem = 0;
+  	      }
+  	      else
+  	      {
+  	        $pointredeem = $rowtempversion[4];
+  	      }
+  	      if ($rowtempversion[5] eq "")
+  	      {
+  	        $pointbalance = 0;
+   	      }
+  	      else
+  	      {
+  	        $pointbalance = $rowtempversion[5];
+  	      }
+
+     	    $dot = " " x (14 - length($pointtotal));
+     	    $pointtotal = $dot . $pointtotal;
+     	    $dot = " " x (14 - length($pointredeem));
+     	    $pointredeem = $dot . $pointredeem;
+     	    $dot = " " x (14 - length($pointbalance));
+     	    $pointbalance = $dot . $pointbalance;
+
+            $varrow = "AT0" . $pointtotal . $pointredeem . $pointbalance . " KUALITAS KREDIT     LANCAR";
+      	    print FILEOMR $varrow . "\n";
+
+            if ($cfgmarketing ne "")
+            {
+               $filedat = $cfgmarketing;
+  	           open(FILEDAT,"$filedat");
+               while (<FILEDAT>)
+               {
+                  if (/$norek/)
+                  {
+                      @datatemp = split(/\t/,$_);
+                      close (FILEDAT);
+                      $info1 = $datatemp[2];
+
+                      $info2 = $datatemp[3];
+
+                      $info3 = $datatemp[4];
+                  }
+               } 
+               close(FILEDAT);
+            }
+            
+            if ($info1 eq "")
+            {
+               $info1 = $oriinfo1;
+            }
+            if ($info2 eq "")
+            {
+               $info2 = $oriinfo2;
+            }
+            if ($info3 eq "")
+            {
+               $info3 = $oriinfo3;
+            }
+            $info1 =~ s/^\s+|\s+$//gm;
+	          $dot = " " x (120-length($info1));
+	          $info1 = $info1 . $dot;
+            $info2 =~ s/^\s+|\s+$//gm;
+	          $dot = " " x (120-length($info2));
+	          $info2 = $info2 . $dot;
+            $info3 =~ s/^\s+|\s+$//gm;
+	          $dot = " " x (120-length($info3));
+	          $info3 = $info3 . $dot;
+
+
+            $varrow = "AM1" . $info1 . $info2 . $info3 . $info4 . $info5;
+      	    print FILEOMR $varrow . "\n";
+            $oriinfo1 = "";
+            $oriinfo2 = "";
+            $oriinfo3 = "";
+            $oriinfo4 = "";
+            $oriinfo5 = "";
+
+            $tempbarcode = substr($varnow,9-1,2) . substr($varnow,6-1,2) . substr($varnow,3-1,2)  . $hitcust;
+
+	          $dot = "0" x (10-length($hitcust));
+            $custseq = $cfgproduct . $dot . $hitcust;
+            $custseqnumber = $dot . $hitcust;
+            $productnumber = $norek;
+            $custaddr5 = "";
+            $custtelpr = "";
+            $custnokartu = $norek;
+            $seqkota = $custcity;
+            $varzipcode = $custzipcode;
+            $seqwil = "";
+            $custstatus = $custcurrency . "," . $custbranch;
+            $seqbarcode = $tempbarcode;
+            $seqrequest = "";
+            $cust_cstaff = "";
+            $seqckurir = "DEFCOU";
+  	        my $querytempversion = "SELECT zip_courier
+  				                          FROM TblZipCode
+  				                          WHERE zip_id='$varzipcode'";
+  	        my $sth = $db->prepare($querytempversion);
+  	        $sth->execute();
+  	        my @rowtempversion = $sth->fetchrow_array;
+  	        $sth->finish; 
+  	        if ($rowtempversion[0] ne "")
+  	        {
+               $seqckurir = $rowtempversion[0];
+  	        }
+
+            $seqckode = "";
+            $seqcregion = "";
+            $seqcpropinsi = "";
+            $seqckota = "";
+            $seqcbranch = $custbranch;
+            $flagtotalpage = $totalpage;
+            $flagtotalamplop = ceil($flagtotalpage / 6);
+            $prodsegment = "";
+            if ($statuspenggabungan eq "Y")
+            {
+               $prodsegment = "REK GAB";
+            }
+
+            print LOGSC $custseq . chr(9) . $prodsegment . chr(9) . $productnumber . chr(9) . $custname . chr(9). $custcomp . chr(9) . $custaddr1 . chr(9) . $custaddr2 . chr(9) . $custaddr3 . chr(9) . $custaddr4 . chr(9) . $custaddr5 . chr(9) . $custtelpr . chr(9) . $custseqnumber . chr(9) . $custnokartu . chr(9) . $seqkota . chr(9) . $varzipcode . chr(9) . uc($seqnfile) . chr(9) . $seqwil . chr(9) . $custstatus . chr(9) . $seqbarcode . chr(9) . $seqrequest . chr(9) . $cust_cstaff . chr(9) . $seqckurir . chr(9) . $seqckode . chr(9) . $seqcregion . chr(9) . $seqcpropinsi . chr(9) . $seqckota . chr(9) . $seqcbranch . chr(9);
+            print LOGSC $flagtotalpage . "," . $flagtotalamplop . chr(9) . "\n";
+
+	          $dot = " " x (20-length($seqbarcode));
+	          $custbarcode = "*" . $seqbarcode . "*" . $dot;
+	          $dot = " " x (20-length($seqckurir));
+	          $custckurir = $seqckurir . $dot;
+            $varrow = "XX" . $custbarcode . $custckurir . $custseqnumber;
+      	    print FILEOMR $varrow . "\n";
+            $totalpage = 0;
+          }
+            }
+      }
+      $retval = funcGetData();
+
+   }
+   print FILEOMR "01" . "\n";
+   print FILEOMR $vartemp;
+   close (FILE);
+   close (FILEOMR);
+   close (LOGPAGE);
+   close (LOGSC);
+
+   $fileenc = $cfgoutdir . "/output/vendor/data.ctk";
+   open(FILEENC,">$fileenc");
+   open(FILEOMR,"$fileomr");
+   while(<FILEOMR>)
+   {
+      print FILEENC $_;
+   }
+   close (FILEOMR);
+   close (FILEENC);
+
+#   my $statement = "LOAD DATA INFILE '$logsc' REPLACE INTO TABLE SPLIT_VendorSort$cfgproduct";
+#   my $sth = $db->prepare($statement);
+#   $sth->execute();
+#   $sth->finish;
+
+           $dumpretval = funcDUMP("$logsc","SPLIT_VendorSort$cfgproduct");
+           $dumpretval = funcDUMP("$logpage","SPLIT_MasterPage$cfgproduct");
+
+ }
+# END KONVERSI DATA
+
+   $File_Handle = "$cfgunixdir/data/norek.idx";
+   open(FILENOREK,">$File_Handle");
+   close(FILENOREK);
+   $File_Handle = "$cfgunixdir/data/norek.idx.upd";
+   open(FILENOREK,">$File_Handle");
+   close(FILENOREK);
+
+ print "Validation.... Please wait.... \n";
+     if ($cfgbpid ne "")
+     {
+       open(LOGBPID,">>$logbpid");
+       print LOGBPID "Validation (Prepare For SPINLock), Please wait....(+/- 10 minutes)\n";
+       close(LOGBPID);
+     }
+
+
+  $varsystem = "$cfgunixdir/bin/validationLockDirect.exe $fileenc 21 $cfgposfile";
+  $retval = system("$varsystem");
+
+   $File_Handle = "$cfgunixdir/data/norek.idx";
+   $File_Norek = $File_Handle . ".upd";
+   open(FILENOREK,">$File_Norek");
+   open(FILEHANDLE,"$File_Handle");
+   $hitnorek=0;
+   while(<FILEHANDLE>)
+   {
+     @datanorek = split(/\t/,$_);
+     $hitnorek++;
+      for ($zz=0;$zz<@datanorek-1;$zz++)
+      {
+          print FILENOREK $datanorek[$zz] . "\t";
+      }
+      print FILENOREK $cfgregion . "\t" . "\n";
+   }
+   close(FILENOREK);
+   close(FILEHANDLE);
+
+  $retval = funcVendorOutput("vendor");
+
+     if ($cfgbpid ne "")
+     {
+       open(LOGBPID,">>$logbpid");
+       print LOGBPID "Archieving For Third Party, Please wait....\n";
+       close(LOGBPID);
+     }
+
+  $varsystem2 = $tempdir . "/" . $cfgproduct . $cfgregion . "run2.bat";
+  open(FILEOUT,">$varsystem2");
+  print FILEOUT "\@echo off\n";
+  $filerar = $cfgdbspin;
+  $filerar =~ tr/\//\\\\/;
+  $tempoutfile = $cfgoutdir . "/output/vendor/manifestkurir.txt";
+  $tempoutfile =~ tr/\//\\/;
+  print FILEOUT "copy \"$filerar\" \"$tempoutfile\" /Y" . "\n";
+  close(FILEOUT);
+  system("$varsystem2");
+
+
+ $filerar = $cfgoutdir . "/output/rar/PRINT" . $cfgproduct . "_" . $databulan . "_" . $fileregionid . ".rar";
+ $filerar =~ tr/\//\\\\/;
+ $tempoutfile = "$cfgunixdir/data";
+ $tempoutfile =~ tr/\//\\\\/;
+ $varsystem = "$cfgunixdir/scripting/rar.exe a -as \"$filerar\" $tempoutfile";
+ $retval = system("$varsystem");
+
+ $filerar = $cfgoutdir . "/output/rar/LOG_CITY" . $cfgproduct . "_" . $databulan . "_" . $fileregionid . ".rar";
+ $filerar =~ tr/\//\\\\/;
+ $tempoutfile = $cfgoutdir . "/output/log/*.*";
+ $tempoutfile =~ tr/\//\\\\/;
+ $varsystem = "$cfgunixdir/scripting/rar.exe a -as -ep \"$filerar\" $tempoutfile";
+ $retval = system("$varsystem");
+
+ $filerar = $cfgoutdir . "/output/rar/KURIR" . $cfgproduct . "_" . $databulan . "_" . $fileregionid . ".rar";
+ $filerar =~ tr/\//\\\\/;
+ $tempoutfile = $cfgoutdir . "/output/vendor/manifes*";
+ $tempoutfile =~ tr/\//\\\\/;
+ $varsystem = "$cfgunixdir/scripting/rar.exe a -as -ep \"$filerar\" $tempoutfile";
+ $retval = system("$varsystem");
+
+ $filerar = "SPLITTING" . $cfgproduct . "_" . $databulan . "_" . $fileregionid . ".rar";
+ $outrar = $fixhtdir;
+ $outrar =~ tr/\//\\\\/;
+ $outrar .= "\\temp\\log\\$filerar";
+ $tempoutfile = $cfgoutdir . "/output/rar";
+ $tempoutfile = $cfgoutdir . "/output/rar";
+ $tempoutfile =~ tr/\//\\\\/;
+ $varsystem = "$cfgunixdir/scripting/rar.exe a -as -ep -df \"$outrar\" $tempoutfile";
+
+ $retval = system("$varsystem");
+
+   	my $statement = "INSERT INTO SE_OtoReminderUser VALUES('$cfguserid',
+   			 NOW(),'SPLITTING $databulan REGION $fileregionid',
+   			 '<A HREF=/temp/log/$filerar>LOG : <br> $filerar</A>',
+   			 'N','bbbbbbbbbb')";
+   	my $sth = $db->prepare($statement);
+   	$sth->execute();
+   	$sth->finish;
+
+     if ($cfgbpid ne "")
+     {
+       open(LOGBPID,">>$logbpid");
+       print LOGBPID "Validation (Prepare For EBS), Please wait....(+/- 10 minutes)\n";
+       close(LOGBPID);
+     }
+
+  $varsystem = "$cfgunixdir/bin/validationDirect.exe $fileomr 21 $cfgposfile";
+  $retval = system("$varsystem");
+
+  print "UPDATE SPININFO Databases.... Please wait.... \n";
+     if ($cfgbpid ne "")
+     {
+       open(LOGBPID,">>$logbpid");
+       print LOGBPID "UPDATE SPININFO Databases.... Please wait....\n";
+       close(LOGBPID);
+     }
+
+  $filesrt = "$cfgunixdir/tmp/CUST_Sort.txt";
+  open(FILESRT,">$filesrt");
+  $filedet = "$cfgunixdir/tmp/CUST_Detail.txt";
+  open(FILEDET,">$filedet");
+  $filemst = "$cfgunixdir/tmp/CUST_MasterData.txt";
+  open(FILEMST,">$filemst");
+  $fileorder = "$cfgunixdir/tmp/CUST_MasterPrint.txt";
+  open(FILEORD,">$fileorder");
+  my $query = "SELECT *
+	        FROM SPLIT_VendorSort$cfgproduct
+	        WHERE cust_ckurir<>'ckurir'";
+  my $sth = $db->prepare($query);
+  $sth->execute();
+  my @row;
+  while ($row = $sth->fetchrow_arrayref)
+  {
+#     $tempckode = $row->[22];
+     $tempckode = $row->[2];
+     $tempprodmaster = $row->[2];
+#     $tempprodno = $row->[2] . $tempcurrency;
+     $tempprodno = $row->[2];
+     $tempencprodno = funcEnc($tempprodno);
+     $tempnorek = $row->[2];
+     $dot = "x" x (length($tempnorek) - 4);
+     $tempcustnama = $row->[3];
+     $tempmastersegmen = $row->[20];
+
+     @datacflag = split(/,/,$row->[27]);
+     $temptotalsheet = $datacflag[0];
+     $temptotalamplop = $datacflag[1];
+
+     if ($cfgproduct ne "BCC")
+     {
+            if ($cfgproduct eq "BPR" or $cfgproduct eq "BSK")
+            {
+              $searchprodno = substr($tempprodno,1-1,10);
+            }
+            else
+            {
+              $searchprodno = $tempprodno;
+            }
+
+  	    my $querytempversion = "SELECT prod_page
+  				     FROM SPLIT_MasterPage$cfgproduct
+  				     WHERE prod_no='$searchprodno'";
+  	    my $sth = $db->prepare($querytempversion);
+  	    $sth->execute();
+  	    my @rowtempversion = $sth->fetchrow_array;
+  	    $sth->finish; 
+        $temptotalsheet = $rowtempversion[0];
+        $temptotalamplop = ceil($rowtempversion[0] / 6);
+     }
+     
+
+     @datacflag = split(/,/,$row->[17]);
+     $tempcurrency = $datacflag[0];
+     $tempbranch = $datacflag[1];
+  	 $tempregion = "";
+     if ($tempbranch ne "")
+     {
+  	    my $querytempversion = "SELECT branch_reg
+  				     FROM TblBranch
+  				     WHERE branch_id='$tempbranch'";
+  	    my $sth = $db->prepare($querytempversion);
+  	    $sth->execute();
+  	    my @rowtempversion = $sth->fetchrow_array;
+  	    $sth->finish; 
+  	    $tempregion = $rowtempversion[0];
+     }
+
+     $secondemail = "";
+     $custemail = "";
+     $custpdfpwd = "";
+     $custflag = "YbbbbbbYbbbbbbb";
+
+  	    my $querytempversion = "SELECT product_number,
+  	           cust_data_two, cust_data_three, 
+  	           product_flags, product_vendor,
+  	           product_master, cust_data_one,
+  	           cust_sex,cust_name, cust_subproduct
+  				     FROM SPLIT_MasterTicket$cfgproduct
+  				     WHERE product_number='$tempprodno'";
+  	    my $sth = $db->prepare($querytempversion);
+  	    $sth->execute();
+  	    my @rowtempversion = $sth->fetchrow_array;
+  	    $sth->finish; 
+        $tempvendor = $rowtempversion[4];
+        $oldtempvendor = $rowtempversion[4];
+  	 if ($rowtempversion[0] ne "")
+  	 {
+           $custemail = $rowtempversion[1];
+           if ($tempcurrency eq "")
+           {
+              $custpdfpwd = $rowtempversion[2] . substr($tempprodno,length($tempprodno)-4);
+           }
+           else
+           {
+              $custpdfpwd = $rowtempversion[2] . substr($tempprodno,length($tempprodno)-7,4);
+           }
+           $custpdfpwd = $rowtempversion[2];
+           $custflag = $rowtempversion[3] . "bbbbb";
+           $tempprodmaster = $rowtempversion[5];
+           if ($rowtempversion[4] ne "")
+           {
+              $tempvendor = $rowtempversion[4];
+           }
+           if ($cfgproduct eq "BRK" or $cfgproduct eq "BSY")
+           {
+              $tempcustnama = $rowtempversion[7] . " " . $rowtempversion[8];
+              $tempmastersegmen = $rowtempversion[9];
+           }
+     }
+
+           if ($cfgproduct eq "BRK" or $cfgproduct eq "BSY")
+           {
+              if ($row->[1] ne "")
+              {
+                 $tempmastersegmen = $row->[1];
+              }
+           }
+
+     if ($tempvendor eq "")
+     {
+        $tempvendor = "DMP";
+     }
+     if (substr($custflag,8-1,1) ne "Y" and substr($tempvendor,0,3) ne "BLK")
+     {
+        $tempvendor = "HLD";
+     }
+     if (substr($custflag,7-1,1) eq "Y")
+     {
+        $tempvendor .= "/EBS";
+     }
+     if (substr($custflag,7-1,1) eq "Y" and substr($custflag,8-1,1) ne "Y" and substr($tempvendor,0,3) ne "BLK")
+     {
+        $tempvendor = "EBS";
+     }
+     if (substr($custflag,7-1,1) ne "Y" and substr($custflag,8-1,1) eq "Y" and substr($tempvendor,0,3) ne "BLK")
+     {
+        $tempvendor = "DMP";
+     }
+     if ($oldtempvendor eq "BLK3")
+     {
+        $tempvendor = $oldtempvendor;
+     }
+     if (substr($tempvendor,0,3) eq "BLK" or substr($tempvendor,0,3) eq "HLD")
+     {
+        $custsegmen = "00" . $tempvendor;
+        $tempcourier = $tempvendor;
+     }
+     else
+     {
+        if ($tempvendor eq "EBS")
+        {
+           $custsegmen = "01" . $tempvendor;
+           $tempcourier = $tempvendor;
+        }
+        else
+        {        
+           $custsegmen = $row->[1];
+           $tempcourier = $row->[21];
+        }
+     }
+     if ($custsegmen eq "05DEBET")
+     {
+           $tempcourier = "BII";
+     }
+
+#     $statement = "UPDATE SPLIT_VendorSort$cfgproduct
+#                   set cust_request='$tempvendor', cust_cregion='$tempregion'
+#                   WHERE product_number='$row->[2]'";
+#     my $sth = $db->prepare($statement);
+#     $sth->execute();
+#     $sth->finish;
+
+     $tempencprodmaster = funcEnc($tempprodmaster);
+     $tempencprodmaster = $tempprodmaster;
+
+#     $custid = $dot . substr($tempnorek,length($tempnorek) - 4);
+#     $custid = "_" . $cfgregion . substr($tempnorek,length($tempnorek) - 4);
+     $custid = substr($row->[0],7-1);
+     $dot = $tempencprodmaster . chr(9) . $tempencprodno . chr(9) . $varnow . chr(9) . $cfgproduct . chr(9) . $cfgregion . chr(9) . $row->[21] . chr(9) . $row->[1] . chr(9) . $custflag . chr(9) . $tempbranch . chr(9) . $tempcurrency . chr(9) . $custemail . chr(9) . "\n";
+     print FILEDET $dot;
+     $dot = $tempencprodno . chr(9) . $cfgproduct . chr(9) . $cfgregion . chr(9) . $tempcustnama . chr(9) . $row->[4] . chr(9) . $row->[5] . chr(9) . $row->[6] . chr(9) . $row->[13] . chr(9) . $row->[14] . chr(9) . $custid . chr(9) . $tempmastersegmen . chr(9) . "" . chr(9) . "1" . chr(9) . $custemail . chr(9) . $custpdfpwd . chr(9) . $tempvendor . chr(9) . $row->[21] . chr(9) . "" . chr(9) . $custflag . chr(9) . "\n";
+     print FILEMST $dot;
+     $dot = $row->[0] . chr(9) . $cfgproduct . chr(9) . $cfgregion . chr(9) . $tempencprodno . chr(9) . $row->[3] . chr(9) . $row->[4] . " " . $row->[5] . " " . $row->[6] . chr(9) . $row->[7] . chr(9) . $row->[13] . chr(9) . $row->[14] . chr(9) . $custid . chr(9) . $custsegmen . chr(9) . $temptotalamplop . chr(9) . $temptotalsheet . chr(9) . $row->[18] . chr(9). $tempcurrency . chr(9) . $tempvendor . chr(9) . $tempcourier . chr(9) . $tempbranch . chr(9) . $tempregion . chr(9) . $varnow . chr(9) . "bbbbb" . chr(9) . $tempckode . chr(9) . $tempprodno . chr(9) . "\n";
+     print FILEORD $dot;
+
+     $dot = "";
+     for ($ki=0;$ki<=18;$ki++)
+     {
+        $dot .= $row->[$ki] . chr(9);
+     }
+     $dot .= $tempvendor . chr(9);
+     for ($ki=20;$ki<=22;$ki++)
+     {
+        $dot .= $row->[$ki] . chr(9);
+     }
+     $dot .= $tempregion . chr(9);
+     for ($ki=24;$ki<=27;$ki++)
+     {
+        $dot .= $row->[$ki] . chr(9);
+     }
+     $dot .= "\n";
+     print FILESRT $dot;
+  }
+  $sth->finish;
+  close(FILEORD);
+  close(FILEDET);
+  close(FILEMST);
+  close(FILESRT);
+
+#   $statement = "LOAD DATA LOCAL INFILE '$filesrt' REPLACE into table SPLIT_VendorSort$cfgproduct";
+#   my $sth = $db->prepare($statement);
+#   $sth->execute();
+#   $sth->finish;
+
+#   $statement = "LOAD DATA LOCAL INFILE '$fileorder' REPLACE into table CUST_MasterPrint$databulan";
+#   my $sth = $db->prepare($statement);
+#   $sth->execute();
+#   $sth->finish;
+
+#   $statement = "LOAD DATA LOCAL INFILE '$filedet' REPLACE into table CUST_Detail";
+#   my $sth = $db->prepare($statement);
+#   $sth->execute();
+#   $sth->finish;
+
+#   $statement = "LOAD DATA LOCAL INFILE '$filemst' REPLACE into table CUST_MasterData";
+#   my $sth = $db->prepare($statement);
+#   $sth->execute();
+#   $sth->finish;
+
+           $dumpretval = funcDUMP("$filesrt","SPLIT_VendorSort$cfgproduct");
+           $dumpretval = funcDUMP("$fileorder","CUST_MasterPrint$databulan");
+           $dumpretval = funcDUMP("$fileorder","CUST_MasterPrintClean");
+           $dumpretval = funcDUMP("$filedet","CUST_Detail");
+           $dumpretval = funcDUMP("$filemst","CUST_MasterData");
+
+
+  print "FINISHING.... Please wait.... \n";
+     if ($cfgbpid ne "")
+     {
+       open(LOGBPID,">>$logbpid");
+       print LOGBPID "FINISHING.... Please wait....\n";
+       close(LOGBPID);
+     }
+
+  $varsystem = $tempdir . "/" . $cfgproduct . $cfgregion . "run.bat";
+  system("$varsystem");
+
+#           $dumpretval = funcDUMP("$cfgunixdir/data/norek.idx","TEMP_Pointer$databulan");
+
+
+           $dumpretval = funcDUMP("$cfgunixdir/data/norek.idx.upd","TEMP_Pointer$databulan");
+           $dumpretval = funcDUMP("$cfgunixdir/data/norek.idx.upd","TEMP_PointerClean");
+
+
+     my $statement = "INSERT INTO TblFinishSPLITTING VALUES('$cfgproduct','$cfgregion','$cfgperiod',NOW())";
+     my $sth = $db->prepare($statement);
+     $sth->execute();
+     $sth->finish;
+
+   	       my $statement = "INSERT INTO
+   	        VALUES('$cfgproduct','$cfgregion','$cfgperiod','P')";
+   	       my $sth = $db->prepare($statement);
+   	       $sth->execute();
+   	       $sth->finish;
+
+# CREATE SAMPLE FUNCTION
+   $userid = $cfguserid;
+   $signintime = $thestart;
+   $fileperiodethn=substr($cfgperiod,1-1,4);
+   $fileperiodebln=substr($cfgperiod,5-1,2);
+   $fileproductid=$cfgproduct;
+   $filesystemid=$cfgproduct;
+   $fileregionid=$cfgregion;
+   $filefolder="sample";
+   $fileticket="LIST";
+   $filelist="";
+
+   $avgnorek = ceil($hitnorek/10);
+   $File_Handle = "$cfgunixdir/data/norek.idx";
+   open(FILEHANDLE,"$File_Handle");
+   $urutnorek=0;
+   while(<FILEHANDLE>)
+   {
+     @datanorek = split(/\t/,$_);
+     $urutnorek++;
+     if ($urutnorek == $avgnorek)
+     {
+        $filelist .= $datanorek[0] . "\r\n";
+        $urutnorek=1;
+     }
+   }
+   close(FILEHANDLE);
+
+
+  	    my $querytempversion = "SELECT system_value
+  				     FROM TblSystem
+  				     WHERE system_id='varreturn'
+  				     AND system_product_id='$cfgproduct'";
+  	    my $sth = $db->prepare($querytempversion);
+  	    $sth->execute();
+  	    my @rowtempversion = $sth->fetchrow_array;
+  	    $sth->finish; 
+        @dataemail = split(/,/,$rowtempversion[0]);
+   $fileemail=$dataemail[0];
+
+   if (length($fileperiodebln) < 2)
+   {
+      $fileperiodebln = "0" . $fileperiodebln;
+   }
+   $batchstatus=$contents{'batchstatus'};
+   $batchtgl=$contents{'batchtgl'};
+   $batchbln=$contents{'batchbln'};
+   $batchthn=$contents{'batchthn'};
+   $batchjam=$contents{'batchjam'};
+
+   $vartime = time;
+   $vartime = $fileperiodethn . $fileperiodebln . $filesystemid . $fileregionid;
+
+   $fileout = "c:/temp/snm/SAMPLE$filesystemid$vartime.SAM.REF";
+   open(FILEOUT,">$fileout");
+   $vartemp = "$fileticket" . chr(9) . $fileemail . chr(9) . "\n";
+   print FILEOUT $vartemp;
+   if (length($filelist) > 8)
+   {
+	    @datalines = split(/\r\n/,$filelist);
+	    for($zz=0;$zz<@datalines;$zz++)
+	    {
+         $vartemp = "$datalines[$zz]" . chr(9) . "\n";
+         print FILEOUT $vartemp;
+      }
+   }
+   close (FILEOUT);
+
+
+   $fileout = "c:/temp/snm/SAMPLE$filesystemid$vartime.SAM";
+   open(FILEOUT,">$fileout");
+   $vartemp = "perl utilexec.cgi sample $filesystemid $fileregionid $fileperiodethn $fileperiodebln $userid $filefolder" . chr(9) . chr(9) . chr(9) . "CMD" . chr(9) . "\n";
+   print FILEOUT $vartemp;
+   close (FILEOUT);
+
+
+   $filenow = substr($signintime,0,4) . substr($signintime,5,2) . substr($signintime,8,2) . substr($signintime,11,2) . substr($signintime,14,2) . substr($signintime,17,2);
+   $bpid = $filenow . $userid;
+   $bptype = "9";
+   $tempfilename = $userid . ".ORDER.SAMPLE";
+   $Filename = $fileout;
+   $filejenis = "SAM";
+   $fileformat = "txtformat";
+   $rarpwd = "";
+   $fileseparator = "tab";
+   $datasql = $where . $Filename;
+#   $fileperiodethn = substr($signintime,0,4);
+#   $fileperiodebln = substr($signintime,5,2);
+   $bpproccess = $filejenis . ";" . $datasql . ";" . $fileformat . ";" . $rarpwd . ";" . $fileseparator . ";";
+   $varkey = "/SYSTEM/" . $tempfilename;
+   $varbyte = 0;
+
+   $bptime = "";
+   if ($batchstatus eq "")
+   {
+      my $query = "SELECT NOW()";
+      my $sth = $db->prepare($query);
+      $sth->execute();
+      my @row = $sth->fetchrow_array;
+      $sth->finish;
+      $bptime = $row[0];
+   }
+   else
+   {
+   	  $bptime = $batchthn . "-" . $batchbln . "-" . $batchtgl . " " . $batchjam . ":00:00";
+   }
+
+   my $statement = "INSERT INTO SE_BackProccess values('$bpid',
+		 '$bptime','$bptype','$bpproccess',
+		'$promoperiod',
+		'N',3,CONCAT('$varkey',';','$varbyte',';'),
+		'','','bbbbb')";
+   my $sth = $db->prepare($statement);
+   $sth->execute();
+   $sth->finish;
+
+# END CREATE SAMPLE FUNCTION
+
+  $thestop = localtime;
+  print "Start : $thestart \n";
+  print "Stop : $thestop \n";
+
+     if ($cfgbpid ne "")
+     {
+       open(LOGBPID,">>$logbpid");
+       print LOGBPID "Start : $thestart\n";
+       print LOGBPID "Stop : $thestop\n";
+       print LOGBPID "SPINValFinish\n";
+       close(LOGBPID);
+     }
+
+ $custsendemail = "";
+ $fileomr = "c:/temp/emailadmin$cfgproduct.tmp";
+   my $querytemp = "SELECT *
+	        FROM TblSystem
+	        WHERE system_product_id='$cfgproduct'
+	        AND system_id='varreturn'";
+   my $sth = $db->prepare($querytemp);
+   $sth->execute();
+   my @rowtemp = $sth->fetchrow_array;
+   $sth->finish; 
+   $custsendemail = $rowtemp[1];
+
+ @dataemail = split(/,/,$custsendemail);
+ for ($i=0;$i<@dataemail;$i++)
+ {
+    open(FILEOMR,">$fileomr");
+    my $querytemp = "SELECT *
+	        FROM TblSystem
+	        WHERE system_product_id='$cfgproduct'
+	        AND (system_id<>'varpdfpwd'
+	        AND system_id<>'vartemplate'
+	        AND system_id<>'varreturn')";
+    my $sth = $db->prepare($querytemp);
+    $sth->execute();
+    my @rowtemp;
+    while ($rowtemp = $sth->fetchrow_arrayref)
+    {
+      print FILEOMR $rowtemp->[0] . chr(9) . $rowtemp->[1] . chr(9) . "\n";
+    }
+    $sth->finish;
+
+   $custsendemail = $dataemail[$i];
+   print FILEOMR "vartemplate" . chr(9) . "$cfgunixdir/scripting/bii_splitting.html" . chr(9) . "\n";
+   print FILEOMR "varpdfcustname" . chr(9) . "$custsendemail" . chr(9) . "\n";
+   print FILEOMR "varcustname" . chr(9) . "$custsendemail" . chr(9) . "\n";
+   print FILEOMR "varto" . chr(9) . "$custsendemail" . chr(9) . "\n";
+   print FILEOMR "varsubject" . chr(9) . "FINISH SPLITTING $cfgproduct" . chr(9) . "\n";
+   print FILEOMR "varfile" . chr(9) . $logbpid . chr(9) . "\n";
+   print FILEOMR "varattachname" . chr(9) . $cfgbpid . ".txt.log" . chr(9) . "\n";
+   print FILEOMR "varotherfile" . chr(9) . $logbpid . chr(9) . "\n";
+   print FILEOMR "varothername" . chr(9) . "aa.txt" . chr(9) . "\n";
+
+   close (FILEOMR);
+
+   $fixbindir = "$cfgunixdir/bin";
+   $varsystem = $fixbindir . "/SPINMailAuth_P1.exe mailBits $fileomr spininfo";
+   $retval = system("$varsystem");
+ }
+
+  exit;
+}
+
+sub funcGetData
+{
+    print FILETEMP $vartemp . "\n";
+    if (substr($vartemp,48-1,27) eq "RINGKASAN REKENING GABUNGAN")
+    {
+       $statuspenggabungan = "Y";
+    }
+    if (substr($vartemp,2-1,20) eq "*** PENGGABUNGAN ***")
+    {
+       $statuspenggabungan = "E";
+    }
+    if (substr($vartemp,89-1,14) eq "NOMOR REKENING" or substr($vartemp,89-1,14) eq "ACCOUNT NUMBER")
+    {
+       $adanorek = "Y";
+       $norek = substr($vartemp,119-1);
+         $norek =~ tr/\r/ /;
+         $norek =~ tr/\n/ /;
+         $norek =~ tr/\r\n/ /;
+         $norek =~ s/^\s+|\s+$//gm;
+
+  	   my $querytempversion = "SELECT cust_prod_no_real
+  				                     FROM CUST_MasterPrint$databulan
+  				                     WHERE cust_prod_no_real like '$norek%'
+  				                     AND cust_product_id='$cfgproduct'";
+  	   my $sth = $db->prepare($querytempversion);
+  	   $sth->execute();
+  	   my @rowtempversion = $sth->fetchrow_array;
+  	   $sth->finish;
+  	   if ($rowtempversion[0] ne "")
+  	   {
+          $adanorek = "T";
+
+              my $statement = "INSERT INTO SPLIT_NorekException VALUES('$rowtempversion[0]',NOW(),
+         			'$cfgproduct','$cfgregion','$cfgperiod','$cfgperiod')";
+              my $sth = $db->prepare($statement);
+              $sth->execute();
+              $sth->finish;
+  	   }
+
+       if (substr($vartemp,2-1,20) ne "*** PENGGABUNGAN ***" and $statuspenggabungan eq "E")
+       {
+          $statuspenggabungan = "F";
+       }
+
+    }
+    if (substr($vartemp,89-1,13) eq "** DIAMBIL **")
+    {
+       $statusdiambil = "Y";
+    }
+    if (substr($vartemp,89-1,7) eq "HALAMAN" or substr($vartemp,89-1,7) eq "PAGE   ")
+    {
+         $totalpage = substr($vartemp,119-1);
+         $totalpage =~ tr/\r/ /;
+         $totalpage =~ tr/\n/ /;
+         $totalpage =~ tr/\r\n/ /;
+         $totalpage =~ s/^\s+|\s+$//gm;
+         print LOGPAGE $norek . $custcurrency . chr(9) . $totalpage . chr(9) . "\n";
+         if (substr($vartemp,89-1,35) eq "HALAMAN                     :     1" or substr($vartemp,89-1,35) eq "PAGE                        :     1")
+         {
+#            $statuspenggabungan = "";
+            if ($statuspenggabungan ne "")
+            {
+               $statuspenggabungan = "F";
+            }
+            else
+            {
+               $statuspenggabungan = "";
+            }
+         }
+    }
+    if (substr($vartemp,89-1,9) eq "MATA UANG" or substr($vartemp,89-1,9) eq "CURRENCY ")
+    {
+  	   $custcurrency = substr($vartemp,119-1,3);
+         $custcurrency =~ tr/\r/ /;
+         $custcurrency =~ tr/\n/ /;
+         $custcurrency =~ tr/\r\n/ /;
+         $custcurrency =~ s/^\s+|\s+$//gm;
+    }
+    if (substr($vartemp,81-1,15) eq "SALDO RATA RATA" or substr($vartemp,81-1,15) eq "AVERAGE BALANCE")
+    {
+       $tempsaldo = substr($vartemp,111-1,20);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custsaldorata = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custsaldorata .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custsaldorata =~ tr/,/./;
+    }
+    if (substr($vartemp,81-1,19) eq "JASA GIRO TAHUN INI")
+    {
+       $tempsaldo = substr($vartemp,111-1,20);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custgirothnini = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custgirothnini .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custgirothnini =~ tr/,/./;
+    }
+    if (substr($vartemp,81-1,15) eq "SALDO TERTINGGI" or substr($vartemp,81-1,15) eq "HIGH BALANCE   ")
+    {
+       $tempsaldo = substr($vartemp,111-1,20);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custsaldotertinggi = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custsaldotertinggi .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custsaldotertinggi =~ tr/,/./;
+    }
+    if (substr($vartemp,81-1,14) eq "SALDO TERENDAH" or substr($vartemp,81-1,14) eq "LOW BALANCE   ")
+    {
+       $tempsaldo = substr($vartemp,111-1,20);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custsaldoterendah = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custsaldoterendah .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custsaldoterendah =~ tr/,/./;
+    }
+    if (substr($vartemp,81-1,7) eq "PLAFOND")
+    {
+       $tempsaldo = substr($vartemp,111-1,20);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custplafond = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custplafond .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custplafond =~ tr/,/./;
+    }
+    if (substr($vartemp,2-1,10) eq "SALDO AWAL" or substr($vartemp,2-1,10) eq "PREVIOUS B")
+    {
+       $tempsaldo = substr($vartemp,32-1,20);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custsaldoawal = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custsaldoawal .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custsaldoawal =~ tr/,/./;
+    }
+    if (substr($vartemp,2-1,26) eq "TOTAL/JUMLAH TRANS. KREDIT" or substr($vartemp,2-1,26) eq "TOTAL CREDIT TRANS/AMOUNT ")
+    {
+       $tempsaldo = substr($vartemp,42-1,20);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custnomtxncr = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custnomtxncr .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custnomtxncr =~ tr/,/./;
+
+       $tempsaldo = substr($vartemp,32-1,7);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custjmltxncr = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custjmltxncr .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custjmltxncr =~ tr/,/./;
+    }
+    if (substr($vartemp,2-1,25) eq "TOTAL/JUMLAH TRANS. DEBIT" or substr($vartemp,2-1,25) eq "TOTAL DEBIT TRANS/AMOUNT ")
+    {
+       $tempsaldo = substr($vartemp,42-1,20);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custnomtxndb = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custnomtxndb .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custnomtxndb =~ tr/,/./;
+
+       $tempsaldo = substr($vartemp,32-1,7);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custjmltxndb = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custjmltxndb .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custjmltxndb =~ tr/,/./;
+    }
+    if (substr($vartemp,2-1,18) eq "BIAYA ADMINISTRASI" or substr($vartemp,2-1,18) eq "ADMINISTRATION FEE")
+    {
+       $tempsaldo = substr($vartemp,32-1,20);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custbiayaadm = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custbiayaadm .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custbiayaadm =~ tr/,/./;
+    }
+    if (substr($vartemp,2-1,22) eq "JASA GIRO YANG DIBAYAR")
+    {
+       $tempsaldo = substr($vartemp,32-1,20);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custgirodibayar = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custgirodibayar .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custgirodibayar =~ tr/,/./;
+    }
+    if (substr($vartemp,2-1,11) eq "SALDO AKHIR" or substr($vartemp,2-1,11) eq "ENDING BALA")
+    {
+       $tempsaldo = substr($vartemp,32-1,20);
+       $tempsaldo =~ tr/\r/ /;
+       $tempsaldo =~ tr/\n/ /;
+       $tempsaldo =~ tr/\r\n/ /;
+       $tempsaldo =~ s/^\s+|\s+$//gm;
+       $custsaldoakhir = "";
+       for ($ki=0;$ki<length($tempsaldo);$ki++)
+       {
+          if (substr($tempsaldo,$ki,1) ne ".")
+          {
+             $custsaldoakhir .= substr($tempsaldo,$ki,1);
+          }
+       }
+       $custsaldoakhir =~ tr/,/./;
+    }
+}
+
+sub funcGetTemp
+{
+          open(FILETEMP,"$filetemp");
+          $hitbaris = 0;
+#          $urut++;
+#          $hitcust++;
+#          $hiturut++;
+          $varkodepos = "";
+
+          if ($hiturut > 10000 or $hiturut == 1)
+          {
+             print $urut . "....\n";
+     	       if ($cfgbpid ne "")
+     	       {
+       		      open(LOGBPID,">>$logbpid");
+       		      print LOGBPID "$urut....\n";
+       		      close(LOGBPID);
+     	       }
+             $hiturut = 1;
+          }
+  	  while (<FILETEMP>)
+  	  {
+      	     $vardata = $_;
+      	     $varasli = $_;
+  	         $hitbaris++;
+             $hitbaristemp++;
+             if ($hitbaristemp eq 2)
+             {
+                $urut++;
+                $hitcust++;
+                $hiturut++;
+             }
+  	         if ($statuspenggabungan eq "Y")
+  	         {
+  	            $maxbaris = 10;
+  	         }
+  	         else
+  	         {
+  	            $maxbaris = 26;
+  	         }
+  	            $maxbaris = 26;
+## SEDANGADATRANSAKSI
+#  	            $maxbaris = 23;
+#  	            $maxbaris = 24;
+## END SEDANGADATRANSAKSI
+  	        
+  	        if ($hitbaris == 12) 
+  	        {
+  	           $oriinfo1 = $vardata;
+     		       $oriinfo1 =~ s/^\s+|\s+$//gm;
+  	        }
+  	        if ($hitbaris == 13) 
+  	        {
+  	           $oriinfo2 = $vardata;
+     		       $oriinfo2 =~ s/^\s+|\s+$//gm;
+  	        }
+  	        if ($hitbaris == 14) 
+  	        {
+  	           $oriinfo3 = $vardata;
+     		       $oriinfo3 =~ s/^\s+|\s+$//gm;
+  	        }
+  	        if ($hitbaris <= $maxbaris)
+  	        {
+  	          if ($norek ne $oldnorek)
+  	          {
+          	   $dot = "0" x (2 - length($hitbaris));
+  	           print FILEOMR $dot . $hitbaris . $vardata;
+  	          }
+  	          if ($hitbaris == 3)
+  	          {
+  	             $custbranch = substr($vardata,2-1,3);
+  	          }
+  	          if ($hitbaris == 4)
+  	          {
+  	             $seqnfile = substr($vardata,15-1,30);
+     		     $seqnfile =~ s/^\s+|\s+$//gm;
+  	          }
+  	          if ($hitbaris == 5)
+  	          {
+  	             $custname = substr($vardata,2-1,60);
+     		     $custname =~ s/^\s+|\s+$//gm;
+     		     $custcomp = "";
+  	          }
+  	          if ($hitbaris == 6)
+  	          {
+  	             $custaddr1 = substr($vardata,2-1,60);
+     		     $custaddr1 =~ s/^\s+|\s+$//gm;
+  	          }
+  	          if ($hitbaris == 7)
+  	          {
+  	             $custaddr2 = substr($vardata,2-1,60);
+     		     $custaddr2 =~ s/^\s+|\s+$//gm;
+  	          }
+  	          if ($hitbaris == 8)
+  	          {
+  	             $custaddr3 = substr($vardata,2-1,60);
+     		     $custaddr3 =~ s/^\s+|\s+$//gm;
+     		     $custaddr4 = "";
+  	          }
+  	          if ($hitbaris == 9)
+  	          {
+  	             $vartemporari = substr($vardata,2-1,60);
+     		     $vartemporari =~ s/^\s+|\s+$//gm;
+     		     $vartempzip = substr($vartemporari,length($vartemporari)-5);
+     		     $custzipcode = $vartempzip;
+     		     $custcity = $vartemporari;
+  	          }
+  	        }
+  	        else
+  	        {
+  	           $cekkode = substr($vardata,9-1,4);
+     		       $cekkode =~ s/^\s+|\s+$//gm;
+     		       $bisaprint = 0;
+  	             if (substr($vardata,4-1,1) eq "/" and length($cekkode) >= 4)
+  	             {
+  	                $sedangadatransaksi = 1;
+  	                $bisaprint = 1;
+  	             }
+                 if (substr($vardata,2-1,40) eq "*****  *    * *    * *****  *      *****")
+                 {
+                    $sedangadasampah = 1;
+                 }
+  	             if (substr($vardata,18-1,27) eq "*** TIDAK ADA TRANSAKSI ***")
+  	             {
+  	                $bisaprint = 1;
+  	             }
+  	             if (substr($vardata,16-1,12) eq "*** REKENING")
+  	             {
+  	                $bisaprint = 1;
+  	                $paksaprint = 1;
+  	             }
+  	             if ($paksaprint > 0 or $sedangadatransaksi > 0)
+  	             {
+  	                $bisaprint = 1;
+  	                $cekvardata = $vardata;
+     		            $cekvardata =~ s/^\s+|\s+$//gm;
+     		            if ($cekvardata eq "")
+     		            {
+     		               $bisaprint = 0;
+     		            }
+  	             }
+  	             if ($sedangadasampah > 0)
+  	             {
+  	                $bisaprint = 0;
+  	             }
+
+  	             if (substr($vardata,55-1,9) eq "TRANSAKSI")
+  	             {
+  	                $bisaprint = 0;
+  	             }
+  	             if (substr($vardata,2-1,11) eq "TGL.   KODE")
+  	             {
+  	                $bisaprint = 0;
+  	             }
+
+  	           if ($bisaprint > 0)
+  	           {
+  	                 print FILEOMR "DD" . $vardata;
+  	           }
+  	        }
+  	  }
+          close (FILETEMP);
+}
+
+sub funcGetGab
+{
+          open(FILETEMP,"$filetemp");
+          $hitbaris = 0;
+          $hittxn = 0;
+
+  	  while (<FILETEMP>)
+  	  {
+      	     $vardata = $_;
+      	     $varasli = $_;
+  	         $hitbarisgab++;
+  	         $hitbaris++;
+  	         $bisaprint = 1;
+          	   $dot = "0" x (2 - length($hitbarisgab));
+          	   $dot .= $hitbarisgab;
+          	 if ($hitbarisgab == 2)
+          	 {
+                 $urut++;
+                 $hitcust++;
+                 $hiturut++;
+          	 }
+  	         if ($hitbarisgab > 10)
+  	         {
+  	            $dot = "DD";
+  	            if ($hitbaris <= 10)
+  	            {
+  	              $bisaprint = 0;
+  	            }
+  	            else
+  	            {
+  	               $hittxn++;
+  	            }
+  	         }
+  	         else
+  	         {
+  	            $maxbaris = 10;
+  	         
+  	            if ($hitbaris <= $maxbaris)
+  	            {
+  	               if ($hitbaris == 3)
+  	               {
+  	                  $custbranch = substr($vardata,2-1,3);
+  	               }
+  	               if ($hitbaris == 4)
+  	               {
+  	                  $seqnfile = substr($vardata,15-1,30);
+     		              $seqnfile =~ s/^\s+|\s+$//gm;
+  	               }
+  	               if ($hitbaris == 5)
+  	               {
+  	                   $custname = substr($vardata,2-1,60);
+     		               $custname =~ s/^\s+|\s+$//gm;
+     		               $custcomp = "";
+  	               }
+  	               if ($hitbaris == 6)
+  	               {
+  	                   $custaddr1 = substr($vardata,2-1,60);
+     		               $custaddr1 =~ s/^\s+|\s+$//gm;
+  	               }
+  	               if ($hitbaris == 7)
+  	               { 
+  	                  $custaddr2 = substr($vardata,2-1,60);
+     		              $custaddr2 =~ s/^\s+|\s+$//gm;
+  	               }
+  	               if ($hitbaris == 8)
+  	               {
+  	                  $custaddr3 = substr($vardata,2-1,60);
+     		              $custaddr3 =~ s/^\s+|\s+$//gm;
+     		              $custaddr4 = "";
+  	               }
+  	               if ($hitbaris == 9)
+  	               {
+  	                  $vartemporari = substr($vardata,2-1,60);
+     		              $vartemporari =~ s/^\s+|\s+$//gm;
+     		              $vartempzip = substr($vartemporari,length($vartemporari)-5);
+     		              $custzipcode = $vartempzip;
+     		              $custcity = $vartemporari;
+  	               }
+  	            }
+  	         }
+  	         if ($bisaprint > 0)
+  	         {
+  	           print FILEOMR $dot . $vardata;
+  	         }
+  	  }
+      close (FILETEMP);
+      
+      for ($zz=$hittxn;$zz<$custtxnperpage;$zz++)
+      {
+         print FILEOMR "DD   " . "\n";
+      }
+}
+
+sub funcParamSplitting
+{
+   my $tempprodno = shift;
+   my $tempid = shift;
+
+	  $paramvalid = 0;
+  	my $querytempversion = "SELECT COUNT(*)
+  				FROM TblParamSplitting
+  				WHERE param_product_id='$cfgproduct'
+  				AND param_group='$tempid'";
+  	my $sth = $db->prepare($querytempversion);
+  	$sth->execute();
+  	my @rowtempversion = $sth->fetchrow_array;
+  	$sth->finish; 
+  	$countparam = $rowtempversion[0];
+
+  	my $querytempversion = "SELECT *
+  				FROM TblParamSplitting
+  				WHERE param_product_id='$cfgproduct'
+  				AND param_group='$tempid'";
+  	my $sth = $db->prepare($querytempversion);
+  	$sth->execute();
+	  while ($rowtempversion = $sth->fetchrow_arrayref)
+	  {
+	     $paramid = $rowtempversion->[0];
+	     if ($rowtempversion->[3] eq "EQ")
+	     {
+	       if ($$paramid eq $rowtempversion->[4])
+	       {
+	          $paramvalid++;
+	       }
+	     }
+	     if ($rowtempversion->[3] eq "NE")
+	     {
+	       if ($$paramid ne $rowtempversion->[4])
+	       {
+	          $paramvalid++;
+	       }
+	     }
+	     if ($rowtempversion->[3] eq "GT")
+	     {
+	       if ($$paramid > $rowtempversion->[4])
+	       {
+	          $paramvalid++;
+	       }
+	     }
+	     if ($rowtempversion->[3] eq "LT")
+	     {
+	       if ($$paramid < $rowtempversion->[4])
+	       {
+	          $paramvalid++;
+	       }
+	     }
+	     if ($rowtempversion->[3] eq "GE")
+	     {
+	       if ($$paramid >= $rowtempversion->[4])
+	       {
+	          $paramvalid++;
+	       }
+	     }
+	     if ($rowtempversion->[3] eq "LE")
+	     {
+	       if ($$paramid <= $rowtempversion->[4])
+	       {
+	          $paramvalid++;
+	       }
+	     }
+	  }
+  	$sth->finish; 
+	  if ($paramvalid >= $countparam)
+	  {
+  	   my $querytempversion = "SELECT COUNT(*)
+  				FROM SPLIT_MasterTicket$cfgproduct
+  				WHERE product_number='$tempprodno'";
+  	   my $sth = $db->prepare($querytempversion);
+  	   $sth->execute();
+  	   my @rowtempversion = $sth->fetchrow_array;
+  	   $sth->finish; 
+  	   if ($rowtempversion[0] eq 0)
+  	   {
+   	      my $statement = "INSERT INTO SPLIT_MasterTicket$cfgproduct VALUES('$tempprodno','$tempprodno',
+   	                       'YbbbbbTTbb','$cfgproduct','$cfgregion','$tempid','','','','','','','','','','','','','')";
+   	      my $sth = $db->prepare($statement);
+   	      $sth->execute();
+   	      $sth->finish;
+  	   }
+  	   else
+  	   {
+   	      my $statement = "UPDATE SPLIT_MasterTicket$cfgproduct 
+   	                       SET product_flags=CONCAT(SUBSTRING(product_flags,1,6),'TTbb'),
+   	                       product_vendor='$tempid'
+   	                       WHERE product_number='$tempprodno'";
+   	      my $sth = $db->prepare($statement);
+   	      $sth->execute();
+   	      $sth->finish;
+  	   }
+	  }
+
+}
+
+sub funcVendorOutput
+{
+   my $tempprn = shift;
+
+   my $statement = "DELETE FROM SPLIT_VendorSort$cfgproduct
+   									WHERE cust_cbranch='pribranch'";
+   my $sth = $db->prepare($statement);
+   $sth->execute();
+   $sth->finish;
+
+   my $query1 = "SELECT mitra_id
+   			 FROM TblMitra
+  		   WHERE mitra_product_id='$cfgproduct'	
+  		   AND SUBSTRING(mitra_flag,1,1)='Y'
+  		   ORDER BY mitra_urut";
+   my $sth = $db->prepare($query1);
+   $sth->execute();
+   my @row1;
+   while ($row1 = $sth->fetchrow_arrayref)
+   {
+      my $query2 = "SELECT courier_wilayah
+   			      FROM TblKurirVSZip
+  		        WHERE courier_product_id='$cfgproduct'	
+  		        AND courier_id='$row1->[0]'
+  		        ORDER BY courier_urut";
+      my $sth = $db->prepare($query2);
+      $sth->execute();
+      my @row2;
+      while ($row2 = $sth->fetchrow_arrayref)
+      {
+         @arrsplitkoma = split(/,/,$row2->[0]);
+      	 for ($ki=0;$ki<@arrsplitkoma;$ki++)
+      	 {
+      		  $varstart = "";
+      			$varend = "";
+      			if (length($arrsplitkoma[$ki]) > 5 and substr($arrsplitkoma[$ki],6-1,1) eq "-")
+      			{
+      					$varstart = substr($arrsplitkoma[$ki],1-1,5);
+      					$varend = substr($arrsplitkoma[$ki],7-1,5);
+      			}
+      			if ($varstart eq "" and $varend eq "")
+      			{
+   	          my $statement = "UPDATE SPLIT_VendorSort$cfgproduct 
+      				 							set cust_ckurir='$row1->[0]'
+					 									WHERE cust_zipcode='$arrsplitkoma[$ki]'";
+   	          my $sth = $db->prepare($statement);
+   	          $sth->execute();
+   	          $sth->finish;
+      			}
+      			else
+      			{
+   	          my $statement = "UPDATE SPLIT_VendorSort$cfgproduct 
+      				 							set cust_ckurir='$row1->[0]'
+					 									WHERE cust_zipcode>='$varstart'
+					 									AND cust_zipcode<='$varend'";
+   	          my $sth = $db->prepare($statement);
+   	          $sth->execute();
+   	          $sth->finish;
+      			}
+      	 }
+      }
+      $sth->finish;
+   }
+   $sth->finish;
+
+ 	      $filebroc = "$cfgunixdir/data/brochure.dat";
+  	    open(FILEBROC,">$filebroc");
+ 	      $fileseq = "$cfgunixdir/data/sequence.idx";
+  	    open(FILESEQ,">$fileseq");
+ 	      $filedat = "$cfgunixdir/data/norek.idx";
+  	    open(FILEDAT,"$filedat");
+  	    $hitdat = 0;
+        while (<FILEDAT>)
+        {
+          $hitdat++;
+          @arrdat = split(/\t/,$_);
+          $dot = $hitdat . chr(9) . $arrdat[1] . chr(9) . "" . chr(9) . "" . chr(9) . "" . chr(9) . "" . chr(9) . $arrdat[3] . chr(9) . $arrdat[4] . chr(9) . $arrdat[5] . chr(9) . $arrdat[6] . chr(9) . $arrdat[0] . chr(9) . "" . chr(9) . "\n";
+          print FILESEQ $dot;
+        }
+        close(FILEDAT);
+        close(FILESEQ);
+
+#   	   my $statement = "LOAD DATA INFILE '$fileseq' REPLACE
+#   	   		    INTO TABLE SPLIT_SPINDB$cfgproduct";
+#   	   my $sth = $db->prepare($statement);
+#   	   $sth->execute();
+#   	   $sth->finish;
+
+           $dumpretval = funcDUMP("$fileseq","SPLIT_SPINDB$cfgproduct");
+
+
+  $filekurir = $cfgoutdir . "/output/vendor/manifestwaybill.txt";
+  open(FILEKURIR,">$filekurir");
+#  print FILEKURIR "barcode" . chr(9) . "norek" . chr(9) . "nama" . chr(9). "company" . chr(9) . "alamat1" . chr(9) . "alamat2" . chr(9) . "alamat3" . chr(9) . "alamat4" . chr(9) . "alamat5" . "kota" . chr(9) . "kodepos" . chr(9) . "nfile" . chr(9) . "pribranch" . chr(9) . "totalpage" . chr(9) . "kurir" . chr(9) . "\n";
+ 	$fileseq = "$cfgunixdir/data/sequence.idx";
+  	open(FILESEQ,">$fileseq");
+	my $query = "SELECT * FROM SPLIT_VendorSort$cfgproduct
+			WHERE product_number<>''
+   			ORDER BY cust_ckurir,cust_wil,cust_nokartu,cust_nfile,cust_zipcode,cust_addr1";
+	my $sth = $db->prepare($query);
+	$sth->execute();
+	my @row;
+	while ($row = $sth->fetchrow_arrayref)
+	{
+#     $dot = $row->[18] . chr(9) . $row->[2] . chr(9) . $row->[3] . chr(9). $row->[4] . chr(9) . $row->[5] . chr(9) . $row->[6] . chr(9) . $row->[7] . chr(9) . $row->[8] . chr(9) . $row->[9] . $row->[13] . chr(9) . $row->[14] . chr(9) . $row->[15] . chr(9) . $tempbranch . chr(9) . $row->[27] . chr(9) . $row->[21] . chr(9) . "\n";
+     $kurspace1 = " " x 45;
+     $kurspace2 = " " x 79;
+     $kurspace3 = " " x 229;
+     $kurbarcode = $row->[18];
+
+     $kurcustname = $row->[3];
+     $kurcustname =~ s/^\s+|\s+$//gm;
+     $dot = " " x (30 - length($kurcustname));
+     $kurcustname .= $dot;
+
+     $kurcompname = $row->[4];
+     $kurcompname =~ s/^\s+|\s+$//gm;
+     $dot = " " x (30 - length($kurcompname));
+     $kurcompname .= $dot;
+
+     $kuraddr1 = $row->[5];
+     $kuraddr1 =~ s/^\s+|\s+$//gm;
+     $dot = " " x (30 - length($kuraddr1));
+     $kuraddr1 .= $dot;
+
+     $row->[6] =~ s/^\s+|\s+$//gm;
+     if (length($row->[6]) > 30)
+     {
+        $kuraddr2 = substr($row->[6],1-1,30);
+     }
+     else
+     {
+        $kuraddr2 = $row->[6];
+     }
+     $kuraddr2 =~ s/^\s+|\s+$//gm;
+     $dot = " " x (30 - length($kuraddr2));
+     $kuraddr2 .= $dot;
+
+     $row->[7] =~ s/^\s+|\s+$//gm;
+     $row->[8] =~ s/^\s+|\s+$//gm;
+     $row->[9] =~ s/^\s+|\s+$//gm;
+     $row->[13] =~ s/^\s+|\s+$//gm;
+     $kuraddr3 = $row->[7] . " " . $row->[8] . " " . $row->[9] . " " . $row->[13];
+     $dot = " " x (58 - length($kuraddr3));
+     $kuraddr3 .= $dot;
+     
+     $kurzipcode = $row->[14];
+     $kurzipcode =~ s/^\s+|\s+$//gm;
+     $dot = " " x (5 - length($kurzipcode));
+     $kurzipcode .= $dot;
+     if ($kurzipcode eq "")
+     {
+        $kurzipcode = "     ";
+     }
+
+     $kursegmen = substr($varnow,9-1,2) . "/" . substr($varnow,6-1,2) . "/" . substr($varnow,1-1,4) . $row->[19];
+     $dot = " " x (19 - length($kursegmen));
+     $kursegmen .= $dot;
+     
+     @datalines = split(/,/,$row->[27]);
+     $kurtotalpage = $datalines[0];
+     $dot = " " x (5 - length($kurtotalpage));
+     $kurtotalpage .= $dot;
+     
+     $kurdefcou = "1" . $row->[21];
+     $dot = " " x (6 - length($kurdefcou));
+     $kurdefcou .= $dot;
+
+     $kurnext = substr($varnext,9-1,2) . "/" . substr($varnext,6-1,2) . "/" . substr($varnext,1-1,4);
+     $dot = " " x (40 - length($kurnext));
+     $kurnext .= $dot;
+     
+     $kurlast = ".";
+
+     $dot = $kurspace1 . $kurbarcode . $kurspace2 . $kurcustname . $kurcompname . $kuraddr1 . $kuraddr2 . $kuraddr3 . $kurzipcode . $kurspace3 . $kursegmen . $kurtotalpage . $kurdefcou . $kurnext . $kurlast . "\n";
+     print FILEKURIR $dot;
+
+     	   my $querytemp = "SELECT * FROM SPLIT_SPINDB$cfgproduct
+     	   			WHERE thecardnumber='$row->[2]'";
+     	   my $sth = $db->prepare($querytemp);
+     	   $sth->execute();
+     	   my @rowtemp = $sth->fetchrow_array;
+     	   $sth->finish; 
+
+  	 if ($rowtemp[1] ne "")
+  	 {
+#	      $dot = "0" x (6-length($hitkurir));
+#	      $dot = $dot . $hitkurir . chr(9) . $rowtemp[1] . chr(9) . "10000" . chr(9) . $rowtemp[6] . chr(9) . $rowtemp[7] . chr(9) . $rowtemp[8] . chr(9) . $rowtemp[9] . chr(9) . "NOR" . chr(9) . "" . chr(9) . "NOR" . chr(9) . "\n";
+	      $dot = $row->[11] . chr(9) . $rowtemp[1] . chr(9) . "10000" . chr(9) . $rowtemp[6] . chr(9) . $rowtemp[7] . chr(9) . $rowtemp[8] . chr(9) . $rowtemp[9] . chr(9) . "NOR" . chr(9) . "" . chr(9) . "NOR" . chr(9) . "\n";
+	      print FILESEQ $dot;
+	   }
+# BROCHURE
+           if (@promoid > 0 and $tempprn eq "vendor")
+           {
+      	      $dot = "bbb";
+      	      $dotname = "";
+      	      for ($zz=0;$zz<@promoid;$zz++)
+      	      {
+     	         my $querytemp = "SELECT promo_prod_no,promo_tray FROM PROMO_BrochureDetail
+     	   			WHERE promo_id='$promoid[$zz]'
+     	   			AND promo_prod_no='$row->[2]'
+     	   			AND promo_region_id='$cfgregion'";
+     	         my $sth = $db->prepare($querytemp);
+     	         $sth->execute();
+     	         my @rowtemp = $sth->fetchrow_array;
+     	         $sth->finish; 
+     	         if ($rowtemp[0] ne "" and $rowtemp[1] ne "")
+     	         {
+     	            if ($rowtemp[1] eq 1)
+     	            {
+     	               $dot = "Y" . substr($dot,2-1);
+     	               $dotname .= $promoname[$zz] . ",";
+     	            }
+     	            if ($rowtemp[1] eq 2)
+     	            {
+     	               $dot = substr($dot,1-1,1) . "Y" . substr($dot,3-1);
+     	               $dotname .= $promoname[$zz] . ",";
+     	            }
+     	            if ($rowtemp[1] eq 3)
+     	            {
+     	               $dot = substr($dot,1-1,2) . "Y";
+     	               $dotname .= $promoname[$zz] . ",";
+     	            }
+     	         }
+       	      }
+
+  	      if ($dot ne "bbb")
+  	      {
+     	         my $querytemp = "SELECT thefilename FROM SPLIT_SPINDB$cfgproduct
+     	   			WHERE thecardnumber='$row->[2]'";
+     	         my $sth = $db->prepare($querytemp);
+     	         $sth->execute();
+     	         my @rowtemp = $sth->fetchrow_array;
+     	         $sth->finish; 
+     	         if ($rowtemp[0] ne "")
+     	         {
+     	           print FILEBROC $rowtemp[0] . chr(9) . $dot . chr(9) . $row->[2] . chr(9) . $dotname . "\n";
+     	         }
+  	      }
+  	   }
+# END BROCHURE
+	}
+  $sth->finish; 
+
+  	close(FILESEQ);
+  	close(FILEBROC);
+  	close(FILEKURIR);
+
+# LOG SUMMARY
+   $filesum = $cfgoutdir . "/output/log/summary.log";
+   open(FILESUM,">$filesum");
+
+     my $querytemp = "SELECT count(*)
+              FROM SPLIT_VendorSort$cfgproduct";
+     my $sth = $db->prepare($querytemp);
+     $sth->execute();
+     my @rowtemp = $sth->fetchrow_array;
+     $sth->finish; 
+   $varrow = "Jumlah Customer " . chr(9) . $rowtemp[0];
+   print FILESUM $varrow . "\n";
+
+   $varrow = "";
+   print FILESUM $varrow . "\n";
+   $varrow = "REKAP REQUEST STATUS";
+   print FILESUM $varrow . "\n";
+	 my $query = "SELECT cust_request as a, count(*) FROM SPLIT_VendorSort$cfgproduct
+			  WHERE product_number<>''
+			  GROUP BY a
+   			ORDER BY a";
+	 my $sth = $db->prepare($query);
+	 $sth->execute();
+	 my @row;
+	 while ($row = $sth->fetchrow_arrayref)
+	 {
+     $varrow = $row->[0] . chr(9) . $row->[1];
+     print FILESUM $varrow . "\n";
+	 }
+   $sth->finish; 
+
+   $varrow = "";
+   print FILESUM $varrow . "\n";
+   $varrow = "REKAP EXCEPTION";
+   print FILESUM $varrow . "\n";
+	 my $query = "SELECT cust_cregion as a, count(*) FROM SPLIT_VendorSort$cfgproduct
+			  WHERE (cust_cregion='THAMRIN' OR cust_cregion='JATINEGARA' OR cust_cregion='PURI KENCANA')
+			  AND SUBSTRING(cust_zipcode,1,1)<>'1'
+			  GROUP BY a
+   			ORDER BY a";
+	 my $sth = $db->prepare($query);
+	 $sth->execute();
+	 my @row;
+	 while ($row = $sth->fetchrow_arrayref)
+	 {
+     $varrow = $row->[0] . chr(9) . $row->[1];
+     print FILESUM $varrow . "\n";
+	 }
+   $sth->finish; 
+
+   $varrow = "";
+   print FILESUM $varrow . "\n";
+   $varrow = "REKAP BROSUR";
+   print FILESUM $varrow . "\n";
+	 my $query = "SELECT PROMO_BrochureHead.promo_tray_name  as a, count(*) 
+	      FROM PROMO_BrochureHead, PROMO_BrochureDetail
+			  WHERE PROMO_BrochureHead.promo_id=PROMO_BrochureDetail.promo_id
+			  AND PROMO_BrochureDetail.promo_region_id='$cfgregion'
+			  AND PROMO_BrochureHead.promo_product_id='$cfgproduct'
+			  GROUP BY a
+   			ORDER BY a";
+	 my $sth = $db->prepare($query);
+	 $sth->execute();
+	 my @row;
+	 while ($row = $sth->fetchrow_arrayref)
+	 {
+     $varrow = $row->[0] . chr(9) . $row->[1];
+     print FILESUM $varrow . "\n";
+	 }
+   $sth->finish; 
+
+   $varrow = "";
+   print FILESUM $varrow . "\n";
+   $varrow = "REKAP CABANG";
+   print FILESUM $varrow . "\n";
+	 my $query = "SELECT cust_cbranch as a, count(*) FROM SPLIT_VendorSort$cfgproduct
+			  WHERE product_number<>''
+			  GROUP BY a
+   			ORDER BY a";
+	 my $sth = $db->prepare($query);
+	 $sth->execute();
+	 my @row;
+	 while ($row = $sth->fetchrow_arrayref)
+	 {
+     my $querytemp = "SELECT branch_name
+              FROM TblBranch
+     	   			WHERE branch_id='$row->[0]'";
+     my $sth = $db->prepare($querytemp);
+     $sth->execute();
+     my @rowtemp = $sth->fetchrow_array;
+     $sth->finish; 
+     if ($rowtemp[0] eq "")
+     {
+        $rowtemp[0] = "unknown";
+     }
+
+     $varrow = $row->[0] . chr(9) . $rowtemp[0] . chr(9) . $row->[1];
+     print FILESUM $varrow . "\n";
+	 }
+   $sth->finish; 
+
+   $varrow = "";
+   print FILESUM $varrow . "\n";
+   $varrow = "REKAP SEGMENTASI";
+   print FILESUM $varrow . "\n";
+	 my $query = "SELECT product_segment as a, count(*) FROM SPLIT_VendorSort$cfgproduct
+			  WHERE product_number<>''
+			  GROUP BY a
+   			ORDER BY a";
+	 my $sth = $db->prepare($query);
+	 $sth->execute();
+	 my @row;
+	 while ($row = $sth->fetchrow_arrayref)
+	 {
+     my $querytemp = "SELECT segmen_name
+              FROM TblSegmen
+     	   			WHERE segmen_id='$row->[0]'
+     	   			AND segmen_product_id='$cfgproduct'";
+     my $sth = $db->prepare($querytemp);
+     $sth->execute();
+     my @rowtemp = $sth->fetchrow_array;
+     $sth->finish; 
+     if ($rowtemp[0] eq "")
+     {
+        $rowtemp[0] = "unknown";
+     }
+
+     $varrow = $row->[0] . chr(9) . $rowtemp[0] . chr(9) . $row->[1];
+     print FILESUM $varrow . "\n";
+	 }
+   $sth->finish; 
+
+   $varrow = "";
+   print FILESUM $varrow . "\n";
+   $varrow = "REKAP KURIR";
+   print FILESUM $varrow . "\n";
+	 my $query = "SELECT cust_ckurir as a, count(*) FROM SPLIT_VendorSort$cfgproduct
+			  WHERE product_number<>''
+			  GROUP BY a
+   			ORDER BY a";
+	 my $sth = $db->prepare($query);
+	 $sth->execute();
+	 my @row;
+	 while ($row = $sth->fetchrow_arrayref)
+	 {
+     my $querytemp = "SELECT mitra_name
+              FROM TblMitra
+     	   			WHERE mitra_id='$row->[0]'
+     	   			AND mitra_product_id='$cfgproduct'";
+     my $sth = $db->prepare($querytemp);
+     $sth->execute();
+     my @rowtemp = $sth->fetchrow_array;
+     $sth->finish; 
+     if ($rowtemp[0] eq "")
+     {
+        $rowtemp[0] = "unknown";
+     }
+
+     $varrow = $row->[0] . chr(9) . $rowtemp[0] . chr(9) . $row->[1];
+     print FILESUM $varrow . "\n";
+	 }
+   $sth->finish; 
+
+   $varrow = "";
+   print FILESUM $varrow . "\n";
+   $varrow = "REKAP HALAMAN";
+   print FILESUM $varrow . "\n";
+	 my $query = "SELECT cust_flag as a, count(*) FROM SPLIT_VendorSort$cfgproduct
+			  WHERE product_number<>''
+			  GROUP BY a
+   			ORDER BY a";
+	 my $sth = $db->prepare($query);
+	 $sth->execute();
+	 my @row;
+	 while ($row = $sth->fetchrow_arrayref)
+	 {
+     $varrow = $row->[0] . chr(9) . $row->[1];
+     print FILESUM $varrow . "\n";
+	 }
+   $sth->finish; 
+
+   close (FILESUM);
+# END LOG SUMMARY
+
+}
+
+sub GAGAL
+{
+   if ($errmsg eq "")
+   {
+      $errmsg = "File not found $sourcefile";
+   }
+   print "\n";
+   print "$errmsg\n";
+   print "  Syntax  : utilConvertXXX.exe [configuration file]";
+   print "\n\n";
+   print "     [configuration file]         CFG\n";
+   print "\n\n";
+   print "  Example : utilConvertXXX.exe convert.cfg  ";
+   print "\n";
+   print "$errmsg\n";
+   exit 99;
+}
+
+sub funcEnc
+{
+  local $param1  = shift;
+	$varenc = "";
+	for ($zz=0;$zz<length($param1);$zz++)
+	{
+		$varonedigit = substr($param1,$zz,1);
+		if ($varonedigit eq "R")
+		{
+		   $varord = 47;
+		}
+		else
+		{
+		   $varord = ord($varonedigit) + 10 ;
+		}
+  	$varenc .= chr($varord);
+	}
+	return $varenc;
+}
+
+sub funcDec
+{
+  local $param1  = shift;
+	$varenc = "";
+	for ($zz=0;$zz<length($param1);$zz++)
+	{
+		$varonedigit = substr($param1,$zz,1);
+		if ($varonedigit eq "/")
+		{
+		   $varord = 82;
+		}
+		else
+		{
+		   $varord = ord($varonedigit) - 10 ;
+		}
+  	$varenc .= chr($varord);
+	}
+	return $varenc;
+}
+
+sub funcDUMP
+{
+   local $dumpfilename = shift;
+   local $dumptable = shift;
+
+   $dumpfilelocal = $dumpfilename;
+   $dumpfilename =~ tr/\//\\/;
+   $dumpfileout = $cfgsharedir . "/DUMP" . $cfgproduct . $cfgregion . ".dat";
+   $dumpfileout =~ tr/\//\\/;
+   $dumpmapping = $cfgmapdir . "/DUMP" . $cfgproduct . $cfgregion . ".dat";
+
+#   $varsystem = $tempdir . "/DUMP" . $cfgproduct . $cfgregion . "run.bat";
+#   open(FILEOUT,">$varsystem");
+#   print FILEOUT "\@echo off\n";
+#   print FILEOUT "copy \"$dumpfilename\" \"$dumpfileout\" /Y";
+#   close(FILEOUT);
+#   system("$varsystem");
+
+#   if (length($cfgmapdir) < 4)
+#   {
+#              $stmtdump = "LOAD DATA LOCAL INFILE '$dumpmapping' REPLACE INTO TABLE $dumptable";
+#              my $sth = $db->prepare($stmtdump);
+#              $sth->execute();
+#              $sth->finish;
+#   }
+#   else
+#   {
+#              $stmtdump = "LOAD DATA INFILE '$dumpmapping' REPLACE INTO TABLE $dumptable";
+#              my $sth = $db->prepare($stmtdump);
+#              $sth->execute();
+#              $sth->finish;
+#   }
+
+              $stmtdump = "LOAD DATA LOCAL INFILE '$dumpfilelocal' REPLACE INTO TABLE $dumptable";
+              my $sth = $db->prepare($stmtdump);
+              $sth->execute();
+              $sth->finish;
+
+   
+}

@@ -1,0 +1,10 @@
+
+.idea/
+
+vendor/
+
+.DS_Store
+
+tools-base64-html/node_modules/
+
+node_modules/
